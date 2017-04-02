@@ -12,3 +12,9 @@ file will probably be used
 6. rewrite srl, div, mul, rem without bugs
 
 7. next stage after counting: addresses and label resolution
+
+8. Handle negative immediate values
+
+9. Check push instruction again
+
+10. order of sw and lw operands

@@ -35,7 +35,7 @@ struct LinkedToken {
     struct LinkedToken * operandThree;
 
     /* this field is valid if token is a register */
-    int registerNum;
+    unsigned int registerNum;
 
     /* this field is valid if token is an int literal */
     int intValue;
@@ -44,11 +44,11 @@ struct LinkedToken {
     struct LinkedToken * nextInstruction;
 
     char * tokenText;
-    int textSize;
+    unsigned int textSize;
 
     /* used during code generation */
-    int numPrimitives;
-    int address;
+    unsigned int numPrimitives;
+    unsigned int address;
 
     struct LinkedToken * next;
 };
