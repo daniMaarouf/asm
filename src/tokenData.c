@@ -23,6 +23,7 @@ struct LinkedToken * createToken() {
     temp->tokenText = NULL;
     temp->textSize = 0;
     temp->numPrimitives = 0;
+    temp->address = 0;
     temp->next = NULL;
     return temp;
 }

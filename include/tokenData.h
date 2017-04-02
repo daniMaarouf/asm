@@ -48,6 +48,7 @@ struct LinkedToken {
 
     /* used during code generation */
     int numPrimitives;
+    int address;
 
     struct LinkedToken * next;
 };

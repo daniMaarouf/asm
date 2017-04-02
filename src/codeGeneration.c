@@ -426,8 +426,18 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
     return true;
 }
 
-bool calculateNuminstrs(struct LinkedToken * tokens, uint16_t startAddress) {
+/*
+    when called with setNumPrimitives = true it just sets the lengths of instructions
+    so that branch labels can be done, when called with false it will actually
+    generate the code and write it to files
+
+*/
+bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bool setNumPrimitives,
+    FILE * binary, FILE * temp, FILE * vhdlText) {
     if (tokens == NULL || startAddress >= 0x7000 || startAddress < 0x4000) {
+        return false;
+    }
+    if (setNumPrimitives == false && (binary == NULL || temp == NULL || vhdlText == NULL)) {
         return false;
     }
 
@@ -473,19 +483,22 @@ bool calculateNuminstrs(struct LinkedToken * tokens, uint16_t startAddress) {
                                 tokens->tokenText, tokens->lineNum);
                             return false;
                         }
-                        if (tokens->instructionType == I_CLEAR) {
-                            tokens->numPrimitives = 1;
-                        } else if (tokens->instructionType == I_POP) {
-                            tokens->numPrimitives = 4;
-                        } else if (tokens->instructionType == I_NOT){
-                            tokens->numPrimitives = 3;
-                        } else if (tokens->instructionType == I_SLL){
-                            tokens->numPrimitives = 1;
-                        } else if (tokens->instructionType == I_SRL){
-                            tokens->numPrimitives = 13;
-                        } else {
-                            tokens->numPrimitives = 3;
+                        if (setNumPrimitives) {
+                            if (tokens->instructionType == I_CLEAR) {
+                                tokens->numPrimitives = 1;
+                            } else if (tokens->instructionType == I_POP) {
+                                tokens->numPrimitives = 4;
+                            } else if (tokens->instructionType == I_NOT){
+                                tokens->numPrimitives = 3;
+                            } else if (tokens->instructionType == I_SLL){
+                                tokens->numPrimitives = 1;
+                            } else if (tokens->instructionType == I_SRL){
+                                tokens->numPrimitives = 1000;
+                            } else {
+                                tokens->numPrimitives = 3;
+                            }
                         }
+
                         tokens = tokens->operandOne->next;
                         break;
                     }
@@ -507,17 +520,19 @@ bool calculateNuminstrs(struct LinkedToken * tokens, uint16_t startAddress) {
                             return false;
                         }
 
-                        if (tokens->instructionType == I_PUSH) {
-                            if (tokens->operandOne->tokenType == REGISTER) {
-                                tokens->numPrimitives = 4;
+                        if (setNumPrimitives) {
+                            if (tokens->instructionType == I_PUSH) {
+                                if (tokens->operandOne->tokenType == REGISTER) {
+                                    tokens->numPrimitives = 4;
+                                } else {
+                                    tokens->numPrimitives = 6;
+                                }
                             } else {
-                                tokens->numPrimitives = 6;
-                            }
-                        } else {
-                            if (tokens->operandOne->tokenType == REGISTER) {
-                                tokens->numPrimitives = 1;
-                            } else {
-                                tokens->numPrimitives = 3;
+                                if (tokens->operandOne->tokenType == REGISTER) {
+                                    tokens->numPrimitives = 1;
+                                } else {
+                                    tokens->numPrimitives = 3;
+                                }
                             }
                         }
 
@@ -543,12 +558,14 @@ bool calculateNuminstrs(struct LinkedToken * tokens, uint16_t startAddress) {
                             return false;
                         }
 
-                        if (tokens->operandOne->tokenType == REGISTER) {
-                            tokens->numPrimitives = 1;
-                        } else if (tokens->operandOne->tokenType == IDENTIFIER) {
-                            tokens->numPrimitives = 3;
-                        } else {
-                            tokens->numPrimitives = 3;
+                        if (setNumPrimitives) {
+                            if (tokens->operandOne->tokenType == REGISTER) {
+                                tokens->numPrimitives = 1;
+                            } else if (tokens->operandOne->tokenType == IDENTIFIER) {
+                                tokens->numPrimitives = 3;
+                            } else {
+                                tokens->numPrimitives = 3;
+                            }
                         }
 
                         tokens = tokens->operandOne->next;
@@ -578,23 +595,25 @@ bool calculateNuminstrs(struct LinkedToken * tokens, uint16_t startAddress) {
                             return false;
                         }
 
-                        if (tokens->instructionType == I_LOAD) {
-                            if (tokens->operandTwo->tokenType == REGISTER) {
-                                tokens->numPrimitives = 1;
+                        if (setNumPrimitives) {
+                            if (tokens->instructionType == I_LOAD) {
+                                if (tokens->operandTwo->tokenType == REGISTER) {
+                                    tokens->numPrimitives = 1;
+                                } else {
+                                    tokens->numPrimitives = 2;
+                                }
+                            } else if (tokens->instructionType == I_LHI) {
+                                if (tokens->operandTwo->tokenType == REGISTER) {
+                                    tokens->numPrimitives = 7;
+                                } else {
+                                    tokens->numPrimitives = 1;
+                                }
                             } else {
-                                tokens->numPrimitives = 2;
-                            }
-                        } else if (tokens->instructionType == I_LHI) {
-                            if (tokens->operandTwo->tokenType == REGISTER) {
-                                tokens->numPrimitives = 7;
-                            } else {
-                                tokens->numPrimitives = 1;
-                            }
-                        } else {
-                            if (tokens->operandTwo->tokenType == REGISTER) {
-                                tokens->numPrimitives = 7;
-                            } else {
-                                tokens->numPrimitives = 1;
+                                if (tokens->operandTwo->tokenType == REGISTER) {
+                                    tokens->numPrimitives = 7;
+                                } else {
+                                    tokens->numPrimitives = 1;
+                                }
                             }
                         }
 
@@ -626,21 +645,137 @@ bool calculateNuminstrs(struct LinkedToken * tokens, uint16_t startAddress) {
                             return false;
                         }
 
-                        if (tokens->operandTwo->tokenType == REGISTER) {
-                            tokens->numPrimitives = 1;
-                        } else if (tokens->operandTwo->tokenType == OFFSET) {
-                            tokens->numPrimitives = 4;
-                        } else {
-                            tokens->numPrimitives = 3;
+                        if (setNumPrimitives) {
+
+                            if (tokens->operandTwo->tokenType == REGISTER) {
+                                tokens->numPrimitives = 1;
+                            } else if (tokens->operandTwo->tokenType == OFFSET) {
+                                tokens->numPrimitives = 4;
+                            } else {
+                                tokens->numPrimitives = 3;
+                            }
                         }
+
                         tokens = tokens->operandTwo->next;
                         break;
                     }
 
-                    
-                    
-                    
+                    case I_AND: case I_OR: case I_XOR: case I_SLT: case I_UADD: case I_SADD:
+                    case I_SSUB: case I_USUB: case I_MUL: case I_DIV: case I_REM: {
+                        if (tokens->operandOne == NULL) {
+                            printf("Invalid first operand for %s instruction on line %d\n",
+                                tokens->tokenText, tokens->lineNum);
+                            return false;
+                        }
+                        if (tokens->operandTwo == NULL) {
+                            printf("Invalid second operand for %s instruction on line %d\n",
+                                tokens->tokenText, tokens->lineNum);
+                            return false;
+                        }
+                        if (tokens->operandThree == NULL) {
+                            printf("Invalid third operand for %s instruction on line %d\n",
+                                tokens->tokenText, tokens->lineNum);
+                            return false;
+                        }
 
+                        if (tokens->operandOne->tokenType != REGISTER
+                            || tokens->operandTwo->tokenType != REGISTER
+                            || (tokens->operandThree->tokenType != REGISTER
+                                && tokens->operandThree->tokenType != DECIMAL_LITERAL
+                            && tokens->operandThree->tokenType != HEX_LITERAL
+                            && tokens->operandThree->tokenType != OCTAL_LITERAL
+                            && tokens->operandThree->tokenType != BIN_LITERAL )) {
+                            printf("%s instruction on line %d must have register then register then register or int literal\n", 
+                                tokens->tokenText, tokens->lineNum);
+                            return false;
+                        }
+                        
+                        if (setNumPrimitives) {
+                            if (tokens->instructionType == I_MUL) {
+                                if (tokens->operandThree->tokenType == REGISTER) {
+                                    tokens->numPrimitives = 1000;
+                                } else {
+                                    tokens->numPrimitives = 1000;
+                                }
+                            } else if (tokens->instructionType == I_DIV) {
+                                if (tokens->operandThree->tokenType == REGISTER) {
+                                    tokens->numPrimitives = 1000;
+                                } else {
+                                    tokens->numPrimitives = 1000;
+                                }
+                            } else if (tokens->instructionType == I_REM) {
+                                if (tokens->operandThree->tokenType == REGISTER) {
+                                    tokens->numPrimitives = 1000;
+                                } else {
+                                    tokens->numPrimitives = 1000;
+                                }
+                            } else {
+                                if (tokens->operandThree->tokenType == REGISTER) {
+                                    tokens->numPrimitives = 1;
+                                } else {
+                                    tokens->numPrimitives = 3;
+                                }
+                            }
+                        }
+                        tokens = tokens->operandThree->next;
+                        break;
+
+                    }
+
+                    case I_BEQ: case I_BNE: case I_BLT: case I_BGT: case I_BGE: case I_BLE: {
+                        if (tokens->operandOne == NULL) {
+                            printf("Invalid first operand for %s instruction on line %d\n",
+                                tokens->tokenText, tokens->lineNum);
+                            return false;
+                        }
+                        if (tokens->operandTwo == NULL) {
+                            printf("Invalid second operand for %s instruction on line %d\n",
+                                tokens->tokenText, tokens->lineNum);
+                            return false;
+                        }
+                        if (tokens->operandThree == NULL) {
+                            printf("Invalid third operand for %s instruction on line %d\n",
+                                tokens->tokenText, tokens->lineNum);
+                            return false;
+                        }
+
+                        if (tokens->operandOne->tokenType != REGISTER
+                            || (tokens->operandTwo->tokenType != REGISTER
+                                && tokens->operandTwo->tokenType != DECIMAL_LITERAL
+                            && tokens->operandTwo->tokenType != HEX_LITERAL
+                            && tokens->operandTwo->tokenType != OCTAL_LITERAL
+                            && tokens->operandTwo->tokenType != BIN_LITERAL)
+                            || (tokens->operandThree->tokenType != REGISTER
+                                && tokens->operandThree->tokenType != DECIMAL_LITERAL
+                            && tokens->operandThree->tokenType != HEX_LITERAL
+                            && tokens->operandThree->tokenType != OCTAL_LITERAL
+                            && tokens->operandThree->tokenType != BIN_LITERAL 
+                            && tokens->operandThree->tokenType != IDENTIFIER)) {
+                            printf("%s instruction on line %d must have register then register or int literal then register or int literal or label\n", 
+                                tokens->tokenText, tokens->lineNum);
+                            return false;
+                        }
+
+                        if (setNumPrimitives) {
+
+                            if (tokens->instructionType == I_BEQ
+                                || tokens->instructionType == I_BNE) {
+                                tokens->numPrimitives = 1;
+                            } else {
+                                tokens->numPrimitives = 2;
+                            }
+
+                            if (tokens->operandTwo->tokenType != REGISTER) {
+                                tokens->numPrimitives += 2;
+                            } 
+                            if (tokens->operandThree->tokenType != REGISTER) {
+                                tokens->numPrimitives += 2;
+                            } 
+                        }
+                        tokens = tokens->operandThree->next;
+                        break;
+                    }
+                    
                     default:
                     printf("Instruction %s on line %d not recognized\n",
                         tokens->tokenText, tokens->lineNum);
@@ -671,15 +806,95 @@ bool calculateNuminstrs(struct LinkedToken * tokens, uint16_t startAddress) {
     return true;
 }
 
+bool resolveLabels(struct LinkedToken * tokens, uint16_t startAddress) {
+    if (tokens == NULL || startAddress >= 0x7000 || startAddress < 0x4000) {
+        return false;
+    }
+
+    struct LinkedToken * iterator = tokens;
+    uint16_t cumulativeAddress = startAddress;
+
+    while (iterator != NULL) {
+        if (iterator->tokenType == INSTRUCTION) {
+            iterator->address = cumulativeAddress;
+            cumulativeAddress += iterator->numPrimitives;
+            if (cumulativeAddress >= 0x7000) {
+                printf("Error. Code generated past 0x6FFF which would overflow into stack\n");
+                return false;
+            }
+        }
+        iterator = iterator->next;
+    }
+
+    iterator = tokens;
+    while (iterator != NULL) {
+
+        if (iterator->tokenType == IDENTIFIER) {
+            if (iterator->tokenText == NULL) {
+                return false;
+            }
+            char * matchingLabel = malloc(sizeof(char) * (iterator->textSize + 2));
+            if (matchingLabel == NULL) {
+                return false;
+            }
+            strcpy(matchingLabel, iterator->tokenText);
+            matchingLabel[iterator->textSize] = ':';
+            matchingLabel[iterator->textSize + 1] = '\0';
+
+            struct LinkedToken * innerIterator = tokens;
+            bool found = false;
+
+            while (innerIterator != NULL) {
+
+                if (innerIterator->tokenType == LABEL) {
+                    if (innerIterator->tokenText == NULL) {
+                        free(matchingLabel);
+                        return false;
+                    }
+                    if (strcmp(matchingLabel, innerIterator->tokenText) == 0) {
+                        if (innerIterator->nextInstruction == NULL) {
+                            free(matchingLabel);
+                            return false;
+                        }
+                        iterator->intValue = innerIterator->nextInstruction->address;
+                        found = true;
+                    }
+                }
+                innerIterator = innerIterator->next;
+            }
+            free(matchingLabel);
+
+            if (!found) {
+                printf("Identifier %s on line %d could not be matched with a label\n",
+                    iterator->tokenText, iterator->lineNum);
+                return false;
+            }
+
+        }
+        iterator = iterator->next;
+
+    }
+
+    return true;
+}
+
 bool generateCode(struct LinkedToken * tokens, const char * fileLoc, uint16_t startAddress) {
     if (tokens == NULL || fileLoc == NULL || startAddress >= 0x7000 || startAddress < 0x4000) {
         return false;
     }
 
-    if (!calculateNuminstrs(tokens, startAddress)) {
+    /* first stage evaluation where just lengths of instructions are obtained */
+    if (!evaluateInstructions(tokens, startAddress, true, NULL, NULL, NULL)) {
         printf("Problem generating code. Some of your instructions may be malformed\n");
         return false;
     }
+
+    if (!resolveLabels(tokens, startAddress)) {
+        printf("Problem resolving addresses or labels\n");
+        return false;
+    }
+
+
 
     int fileNameLen = strlen(fileLoc);
 

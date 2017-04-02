@@ -6,3 +6,9 @@
 
 4. If there are duplicate labels in code than first one in
 file will probably be used
+
+5. First instruction should load the stack pointer
+
+6. rewrite srl, div, mul, rem without bugs
+
+7. next stage after counting: addresses and label resolution
