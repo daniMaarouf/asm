@@ -176,7 +176,7 @@ bool identifyTokens(struct LinkedToken * list) {
             list->tokenType = OCTAL_LITERAL;
         } else if (stringLiteral(list)) {
             list->tokenType = STRING_LITERAL;
-            printf("String literals not supported: %s\n", list->tokenText);
+            printf("String literals not supported: %s on line %d\n", list->tokenText, list->lineNum);
             return false;
         } else if (allChars(list, isAlphanumeric, 0)) {
 

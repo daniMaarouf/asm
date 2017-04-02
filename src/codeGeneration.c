@@ -7,6 +7,20 @@
 static int regNumber(const char * regString);
 static int decodeNum(const char * numStr, bool * valid);
 
+static void printBinary(uint16_t num) {
+    static const char * nybbleStrings[] = {
+        "0000","0001","0010","0011","0100","0101","0110","0111",
+        "1000","1001","1010","1011","1100","1101","1110","1111"
+    };
+
+    printf("%s%s%s%s", 
+        nybbleStrings[(num & 0xF000) >> 12], 
+        nybbleStrings[(num & 0x0F00) >> 8],
+        nybbleStrings[(num & 0x00F0) >> 4],
+        nybbleStrings[(num & 0x000F)]);
+    return;
+}   
+
 /*
     when tokens reach this point they can be a
     linear sequence of tokens which have valid
@@ -118,9 +132,12 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                     }
 
                     /* one register */
-                    case I_CLEAR: case I_INC: case I_DEC: 
-                    /* one register or int literal or label operand */
-                    case I_JMP: case I_PUSH: case I_POP: {
+                    case I_CLEAR: case I_INC: case I_DEC: case I_POP: 
+                    case I_NOT: case I_SLL: case I_SRL: 
+                    /* one register or int literal */
+                    case I_PUSH: case I_OUT:
+                    /* one register or int literal or label */
+                    case I_JMP: {
                         if (tokens->next == NULL || (tokens->next->tokenType == NONE
                     && tokens->next->next == NULL)) {
                             printf("Instruction %s on line %d is missing its operand\n", tokens->tokenText, tokens->lineNum);
@@ -138,7 +155,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                             break;
                         } else if ((tokens->instructionType == I_JMP
                             || tokens->instructionType == I_PUSH
-                            || tokens->instructionType == I_POP) 
+                            || tokens->instructionType == I_OUT) 
                             && 
                             (tokens->next->tokenType == DECIMAL_LITERAL
                                 || tokens->next->tokenType == HEX_LITERAL
@@ -155,9 +172,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                             tokens->operandOne = tokens->next;
                             tokens = tokens->next->next;
                             break;
-                        } else if ((tokens->instructionType == I_JMP
-                            || tokens->instructionType == I_PUSH
-                            || tokens->instructionType == I_POP) 
+                        } else if ((tokens->instructionType == I_JMP) 
                             && tokens->next->tokenType == IDENTIFIER) {
                             tokens->operandOne = tokens->next;
                             tokens = tokens->next->next;
@@ -170,9 +185,10 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                         break;
                     }
 
+                    /* register then register or literal */
+                    case I_LLO: case I_LHI: case I_LOAD: 
                     /* register then register or literal or offset */
-                    case I_LW: case I_SW: case I_SLL: case I_SRL: case I_OUT: 
-                    case I_LLO: case I_LHI: case I_LOAD: case I_NOT: {
+                    case I_LW: case I_SW:  {
                         if ((tokens->next == NULL || (tokens->next->tokenType == NONE
                     && tokens->next->next == NULL))) {
                             printf("Instruction %s on line %d is missing its first operand\n", tokens->tokenText, tokens->lineNum);
@@ -275,7 +291,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                     /* register then register then register or literal */
                     case I_AND: case I_OR: case I_XOR: case I_SLT: case I_UADD: case I_SADD:
                     case I_SSUB: case I_USUB: case I_MUL: case I_DIV: case I_REM: 
-                    /* register then register or literal then register or literal */
+                    /* register then register or literal then register or literal or label */
                     case I_BEQ: case I_BNE: case I_BLT: case I_BGT: case I_BGE: case I_BLE: {
 
                         if (tokens->next == NULL || (tokens->next->tokenType == NONE
@@ -410,8 +426,258 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
     return true;
 }
 
-bool generateCode(struct LinkedToken * tokens, const char * fileLoc) {
-    if (tokens == NULL || fileLoc == NULL) {
+bool calculateNuminstrs(struct LinkedToken * tokens, uint16_t startAddress) {
+    if (tokens == NULL || startAddress >= 0x7000 || startAddress < 0x4000) {
+        return false;
+    }
+
+    while (tokens != NULL) {
+
+        if (tokens->tokenText == NULL || tokens->tokenType == NONE) {
+            break;
+        }
+
+        switch(tokens->tokenType) {
+            case COMMENT:
+            tokens = tokens->next;
+            break;
+
+            case LABEL: {
+                if (tokens->nextInstruction == NULL) {
+                    printf("Label %s on line %d is not pointing to an instruction\n",
+                        tokens->tokenText, tokens->lineNum);
+                    return false;
+                } else {
+                    tokens = tokens->nextInstruction;
+                }
+                break;
+            }
+
+            case INSTRUCTION: {
+
+                switch(tokens->instructionType) {
+
+                    case I_NOP:
+                    tokens->numPrimitives = 1;
+                    tokens = tokens->next;
+                    break;
+
+                    case I_CLEAR: case I_INC: case I_DEC: case I_POP: case I_NOT: case I_SLL: case I_SRL: {
+                        if (tokens->operandOne == NULL) {
+                            printf("Invalid first operand for %s instruction on line %d\n",
+                                tokens->tokenText, tokens->lineNum);
+                            return false;
+                        }
+                        if (tokens->operandOne->tokenType != REGISTER) {
+                            printf("%s instruction on line %d must have register operand\n",
+                                tokens->tokenText, tokens->lineNum);
+                            return false;
+                        }
+                        if (tokens->instructionType == I_CLEAR) {
+                            tokens->numPrimitives = 1;
+                        } else if (tokens->instructionType == I_POP) {
+                            tokens->numPrimitives = 4;
+                        } else if (tokens->instructionType == I_NOT){
+                            tokens->numPrimitives = 3;
+                        } else if (tokens->instructionType == I_SLL){
+                            tokens->numPrimitives = 1;
+                        } else if (tokens->instructionType == I_SRL){
+                            tokens->numPrimitives = 13;
+                        } else {
+                            tokens->numPrimitives = 3;
+                        }
+                        tokens = tokens->operandOne->next;
+                        break;
+                    }
+
+                    /* pop actually a bit different from push, handle this later */
+                    case I_PUSH: case I_OUT: {
+                        if (tokens->operandOne == NULL) {
+                            printf("Invalid first operand for %s instruction on line %d\n",
+                                tokens->tokenText, tokens->lineNum);
+                            return false;
+                        }
+                        if (tokens->operandOne->tokenType != REGISTER
+                            && tokens->operandOne->tokenType != DECIMAL_LITERAL
+                            && tokens->operandOne->tokenType != HEX_LITERAL
+                            && tokens->operandOne->tokenType != OCTAL_LITERAL
+                            && tokens->operandOne->tokenType != BIN_LITERAL) {
+                            printf("%s instruction on line %d must have register or int literal operand\n",
+                                tokens->tokenText, tokens->lineNum);
+                            return false;
+                        }
+
+                        if (tokens->instructionType == I_PUSH) {
+                            if (tokens->operandOne->tokenType == REGISTER) {
+                                tokens->numPrimitives = 4;
+                            } else {
+                                tokens->numPrimitives = 6;
+                            }
+                        } else {
+                            if (tokens->operandOne->tokenType == REGISTER) {
+                                tokens->numPrimitives = 1;
+                            } else {
+                                tokens->numPrimitives = 3;
+                            }
+                        }
+
+                        tokens = tokens->operandOne->next;
+                        break;
+                    }
+
+                    case I_JMP: {
+                        if (tokens->operandOne == NULL) {
+                            printf("Invalid first operand for %s instruction on line %d\n",
+                                tokens->tokenText, tokens->lineNum);
+                            return false;
+                        }
+
+                        if (tokens->operandOne->tokenType != REGISTER
+                            && tokens->operandOne->tokenType != IDENTIFIER
+                            && tokens->operandOne->tokenType != DECIMAL_LITERAL
+                            && tokens->operandOne->tokenType != HEX_LITERAL
+                            && tokens->operandOne->tokenType != OCTAL_LITERAL
+                            && tokens->operandOne->tokenType != BIN_LITERAL) {
+                            printf("%s instruction on line %d must have register, int literal or label operand\n",
+                                tokens->tokenText, tokens->lineNum);
+                            return false;
+                        }
+
+                        if (tokens->operandOne->tokenType == REGISTER) {
+                            tokens->numPrimitives = 1;
+                        } else if (tokens->operandOne->tokenType == IDENTIFIER) {
+                            tokens->numPrimitives = 3;
+                        } else {
+                            tokens->numPrimitives = 3;
+                        }
+
+                        tokens = tokens->operandOne->next;
+                        break;
+                    }
+
+                    case I_LLO: case I_LHI: case I_LOAD: {
+                        if (tokens->operandOne == NULL) {
+                            printf("Invalid first operand for %s instruction on line %d\n",
+                                tokens->tokenText, tokens->lineNum);
+                            return false;
+                        }
+                        if (tokens->operandTwo == NULL) {
+                            printf("Invalid second operand for %s instruction on line %d\n",
+                                tokens->tokenText, tokens->lineNum);
+                            return false;
+                        }
+
+                        if (tokens->operandOne->tokenType != REGISTER
+                            || (tokens->operandTwo->tokenType != REGISTER
+                                && tokens->operandTwo->tokenType != DECIMAL_LITERAL
+                            && tokens->operandTwo->tokenType != HEX_LITERAL
+                            && tokens->operandTwo->tokenType != OCTAL_LITERAL
+                            && tokens->operandTwo->tokenType != BIN_LITERAL)) {
+                            printf("%s instruction on line %d must have register then register or int literal\n", 
+                                tokens->tokenText, tokens->lineNum);
+                            return false;
+                        }
+
+                        if (tokens->instructionType == I_LOAD) {
+                            if (tokens->operandTwo->tokenType == REGISTER) {
+                                tokens->numPrimitives = 1;
+                            } else {
+                                tokens->numPrimitives = 2;
+                            }
+                        } else if (tokens->instructionType == I_LHI) {
+                            if (tokens->operandTwo->tokenType == REGISTER) {
+                                tokens->numPrimitives = 7;
+                            } else {
+                                tokens->numPrimitives = 1;
+                            }
+                        } else {
+                            if (tokens->operandTwo->tokenType == REGISTER) {
+                                tokens->numPrimitives = 7;
+                            } else {
+                                tokens->numPrimitives = 1;
+                            }
+                        }
+
+                        tokens = tokens->operandTwo->next;
+                        break;
+                    }
+
+                    case I_LW: case I_SW:  {
+                        if (tokens->operandOne == NULL) {
+                            printf("Invalid first operand for %s instruction on line %d\n",
+                                tokens->tokenText, tokens->lineNum);
+                            return false;
+                        }
+                        if (tokens->operandTwo == NULL) {
+                            printf("Invalid second operand for %s instruction on line %d\n",
+                                tokens->tokenText, tokens->lineNum);
+                            return false;
+                        }
+
+                        if (tokens->operandOne->tokenType != REGISTER
+                            || (tokens->operandTwo->tokenType != REGISTER
+                                && tokens->operandTwo->tokenType != DECIMAL_LITERAL
+                            && tokens->operandTwo->tokenType != HEX_LITERAL
+                            && tokens->operandTwo->tokenType != OCTAL_LITERAL
+                            && tokens->operandTwo->tokenType != BIN_LITERAL
+                            && tokens->operandTwo->tokenType != OFFSET)) {
+                            printf("%s instruction on line %d must have register then register or int literal or offset\n", 
+                                tokens->tokenText, tokens->lineNum);
+                            return false;
+                        }
+
+                        if (tokens->operandTwo->tokenType == REGISTER) {
+                            tokens->numPrimitives = 1;
+                        } else if (tokens->operandTwo->tokenType == OFFSET) {
+                            tokens->numPrimitives = 4;
+                        } else {
+                            tokens->numPrimitives = 3;
+                        }
+                        tokens = tokens->operandTwo->next;
+                        break;
+                    }
+
+                    
+                    
+                    
+
+                    default:
+                    printf("Instruction %s on line %d not recognized\n",
+                        tokens->tokenText, tokens->lineNum);
+                    return false;
+
+                }
+
+                break;
+            }
+
+            case REGISTER:
+            case DECIMAL_LITERAL:
+            case HEX_LITERAL:
+            case BIN_LITERAL:
+            case OCTAL_LITERAL:
+            case OFFSET:
+            case STRING_LITERAL:
+            case IDENTIFIER:
+            case NONE:
+            default:
+            printf("Location is token %s on line %d is incorrect\n", 
+                tokens->tokenText, tokens->lineNum);
+            return false;
+
+        }
+    }
+
+    return true;
+}
+
+bool generateCode(struct LinkedToken * tokens, const char * fileLoc, uint16_t startAddress) {
+    if (tokens == NULL || fileLoc == NULL || startAddress >= 0x7000 || startAddress < 0x4000) {
+        return false;
+    }
+
+    if (!calculateNuminstrs(tokens, startAddress)) {
+        printf("Problem generating code. Some of your instructions may be malformed\n");
         return false;
     }
 
@@ -442,9 +708,6 @@ bool generateCode(struct LinkedToken * tokens, const char * fileLoc) {
     FILE * textFile = fopen(textFileName, "w");
     FILE * binaryFile = fopen(binaryName, "wb");
     FILE * tempFile = fopen(tempName, "w");
-
-
-
 
 
     fclose(textFile);

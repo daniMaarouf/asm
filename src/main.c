@@ -55,7 +55,7 @@ int main(int argc, char ** argv) {
         return 1;
     }
 
-    if (!generateCode(tokens, arg)) {
+    if (!generateCode(tokens, arg, 0x4000)) {
         printf("Could not generate binary\n");
         destroyTokens(tokens);
         return 1;
