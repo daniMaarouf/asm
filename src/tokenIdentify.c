@@ -18,14 +18,14 @@ bool isLabel(struct LinkedToken * token) {
     return (token->tokenText[token->textSize - 1] == ':');
 }
 
-bool allChars(struct LinkedToken * token, bool (*func)(char)) {
+bool allChars(struct LinkedToken * token, bool (*func)(char), int startIndex) {
     if (token == NULL || token->tokenText == NULL
-            || token->textSize == 0 || func == NULL) {
+            || token->textSize == 0 || func == NULL || startIndex < 0) {
         return false;
     }
 
     int i;
-    for (i = 0; i < token->textSize; i++) {
+    for (i = startIndex; i < token->textSize; i++) {
         if (!func(token->tokenText[i])) {
             return false;
         }
@@ -40,11 +40,17 @@ bool nonDecimalLiteral(struct LinkedToken * token, char c) {
         return false;
     }
 
-    if (token->tokenText[0] != '0' || token->tokenText[1] != c) {
+    if (token->tokenText[0] == '-' && token->textSize < 4) {
+        return false;
+    }
+
+    int offset = (token->tokenText[0] == '-');
+
+    if (token->tokenText[0 + offset] != '0' || token->tokenText[1 + offset] != c) {
         return false;
     }
     int i;
-    for (i = 2; i < token->textSize; i++) {
+    for (i = 2 + offset; i < token->textSize; i++) {
 
         if (!( (token->tokenText[i] >= '0' && token->tokenText[i] <= '9') 
             || (token->tokenText[i] >= 'a' && token->tokenText[i] <= 'f') ) ) {
@@ -153,7 +159,10 @@ bool identifyTokens(struct LinkedToken * list) {
             list->tokenType = COMMENT;
         } else if (list->tokenText[0] == '$') {
             list->tokenType = REGISTER;
-        } else if (allChars(list, isDigit)) {
+        } else if (allChars(list, isDigit, 0)) {
+            list->tokenType = DECIMAL_LITERAL;
+        } else if (list->tokenText[0] == '-'
+            && allChars(list, isDigit, 1)) {
             list->tokenType = DECIMAL_LITERAL;
         } else if (nonDecimalLiteral(list, 'x')) {
             list->tokenType = HEX_LITERAL;
@@ -165,7 +174,7 @@ bool identifyTokens(struct LinkedToken * list) {
             list->tokenType = STRING_LITERAL;
             printf("String literals not supported: %s\n", list->tokenText);
             return false;
-        } else if (allChars(list, isAlpha)) {
+        } else if (allChars(list, isAlpha, 0)) {
 
             int type = instructionType(list);
             if (type == -1) {

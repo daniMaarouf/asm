@@ -8,6 +8,137 @@
 
 static void printUsageInfo(const char * binName);
 
+int regNumber(const char * regString) {
+    if (regString == NULL) {
+        return -1;
+    }
+    if (strcmp(regString, "$r0") == 0) {
+        return 0;
+    } else if (strcmp(regString, "$r1") == 0) {
+        return 1;
+    } else if (strcmp(regString, "$r2") == 0) {
+        return 2;
+    } else if (strcmp(regString, "$r3") == 0) {
+        return 3;
+    } else if (strcmp(regString, "$r4") == 0) {
+        return 4;
+    } else if (strcmp(regString, "$r5") == 0) {
+        return 5;
+    } else if (strcmp(regString, "$r6") == 0) {
+        return 6;
+    } else if (strcmp(regString, "$r7") == 0) {
+        return 7;
+    } else if (strcmp(regString, "$zero") == 0) {
+        return 8;
+    } else if (strcmp(regString, "$sw") == 0) {
+        return 9;
+    } else if (strcmp(regString, "$led") == 0) {
+        return 10;
+    } else if (strcmp(regString, "$psw") == 0) {
+        return 11;
+    } else {
+        return -1;
+    }
+}
+
+int decodeNum(const char * numStr, bool * valid) {
+    if (numStr == NULL || valid == NULL) {
+        return -1;
+    }
+
+    *valid = true;
+
+    int numLen = strlen(numStr);
+    if (numLen == 0) {
+        *valid = false;
+        return -1;
+    }
+
+    bool neg = (numStr[0] == '-');
+    if (neg && numLen <= 1) {
+        *valid = false;
+        return -1;
+    }
+
+    if (numLen < 3 + neg) {
+        int total = 0;
+        int weight = 1;
+        int i;
+        for (i = numLen - 1; i >= neg; i--) {
+            if (!(numStr[i] >= '0' && numStr[i] <= '9')) {
+                *valid = false;
+                return -1;
+            }
+            total += weight * (numStr[i] - '0');
+            weight *= 10;
+        }
+        if (neg) {
+            return -total;
+        } else {
+            return total;
+        }
+    } else {
+
+        int total = 0;
+        int weight = 0;
+        int i;
+
+        if (numStr[neg + 1] == 'x') {
+            weight = 16;
+            for (i = numLen - 1; i >= 2 + neg; i--) {
+                if (!((numStr[i] >= '0' && numStr[i] <= '9') 
+                    || (numStr[i] >= 'a' && numStr[i] <= 'f'))) {
+                    *valid = false;
+                    return -1;
+                }
+                if (numStr[i] >= '0' && numStr[i] <= '9') {
+                    total += weight * (numStr[i] - '0');
+                } else {
+                    total += weight * ((numStr[i] - 'a') + 10);
+                }
+                weight *= 16;
+            }
+        } else if (numStr[neg + 1] == 'o') {
+            weight = 8;
+            for (i = numLen - 1; i >= 2 + neg; i--) {
+                if (!(numStr[i] >= '0' && numStr[i] <= '7')) {
+                    *valid = false;
+                    return -1;
+                }
+                total += weight * (numStr[i] - '0');
+                weight *= 8;
+            }
+        } else if (numStr[neg + 1] == 'b') {
+            weight = 2;
+            for (i = numLen - 1; i >= 2 + neg; i--) {
+                if (!(numStr[i] >= '0' && numStr[i] <= '1')) {
+                    *valid = false;
+                    return -1;
+                }
+                total += weight * (numStr[i] - '0');
+                weight *= 2;
+            }
+            
+        } else {
+            weight = 10;
+            for (i = numLen - 1; i >= neg; i--) {
+                if (!(numStr[i] >= '0' && numStr[i] <= '9')) {
+                    *valid = false;
+                    return -1;
+                }
+                total += weight * (numStr[i] - '0');
+                weight *= 10;
+            }
+        }
+
+        if (neg) {
+            return -total;
+        } else {
+            return total;
+        }
+    }
+}
+
 /*
     when tokens reach this point they can be a
     linear sequence of tokens which have valid
@@ -17,7 +148,7 @@ static void printUsageInfo(const char * binName);
     fields for the data structure representing
     each token
 */
-bool fillTokenFields(struct LinkedToken * tokens) {
+bool fillInstructionFields(struct LinkedToken * tokens) {
     if (tokens == NULL) {
         return false;
     }
@@ -76,44 +207,83 @@ bool fillTokenFields(struct LinkedToken * tokens) {
 
             case INSTRUCTION: {
 
+                /* TODO: point preceeding labels to instruction */
+
                 /* now make sure that surrounding tokens are organized
                 in way that is valid for the specific instruction */
-
                 switch(tokens->instructionType) {
 
                     /* no operands */
-                    case I_NOP:
-
-                    break;
+                    case I_NOP: {
+                        tokens = tokens->next;
+                        break;
+                    }
 
                     /* one register */
                     case I_CLEAR:
                     case I_INC:
-                    case I_DEC:
+                    case I_DEC: 
+                    /* one register or int literal or label operand */
+                    case I_JMP:
+                    case I_PUSH:
+                    case I_POP: {
+                        if (tokens->next == NULL || (tokens->next->tokenType == NONE
+                    && tokens->next->next == NULL)) {
+                            printf("Instruction %s is missing its operand\n", tokens->tokenText);
+                            return false;
+                        } else if (tokens->next->tokenType == REGISTER) {
 
-                    break;
+                            int regNum = regNumber(tokens->next->tokenText);
+                            if (regNum == -1) {
+                                printf("Could not get register number for %s instruction\n", tokens->tokenText);
+                                return false;
+                            }
+                            tokens->next->registerNum = regNum;
+                            tokens->operandOne = tokens->next;
+                            tokens = tokens->next->next;
+                            break;
+                        } else if ((tokens->instructionType == I_JMP
+                            || tokens->instructionType == I_PUSH
+                            || tokens->instructionType == I_POP) 
+                            && 
+                            (tokens->next->tokenType == DECIMAL_LITERAL
+                                || tokens->next->tokenType == HEX_LITERAL
+                                || tokens->next->tokenType == BIN_LITERAL
+                                || tokens->next->tokenType == OCTAL_LITERAL)) {
+
+                            bool valid = false;
+                            int literalNum = decodeNum(tokens->next->tokenText, &valid);
+                            if (!valid) {
+                                printf("Could not decode operand for %s instruction\n", tokens->tokenText);
+                                return false;
+                            }
+                            tokens->next->intValue = literalNum;
+                            tokens->operandOne = tokens->next;
+                            tokens = tokens->next->next;
+                            break;
+                        } else {
+                            printf("Instruction %s has an invalid operand\n", tokens->tokenText);
+                            return false;
+                        }
+
+                        break;
+                    }
 
                     /* register then register or literal or offset */
                     case I_LW:
                     case I_SW:
                     case I_SLL:
                     case I_SRL:
-                    case I_OUT:
-                    
-
-                    break;
-
-
-                    /* one register or int literal or label operand */
+                    case I_OUT: 
                     case I_LLO:
                     case I_LHI:
                     case I_LOAD:
-                    case I_JMP:
-                    case I_PUSH:
-                    case I_POP:
-                    case I_NOT:
+                    case I_NOT: {
 
-                    break;
+
+
+                        break;
+                    }
 
                     /* register then register or literal
                     then register or literal */
@@ -122,9 +292,10 @@ bool fillTokenFields(struct LinkedToken * tokens) {
                     case I_BLT:
                     case I_BGT:
                     case I_BGE:
-                    case I_BLE:
+                    case I_BLE: {
 
-                    break;
+                        break;
+                    }
 
                     /* register then register then register or literal */
                     case I_AND:
@@ -137,9 +308,10 @@ bool fillTokenFields(struct LinkedToken * tokens) {
                     case I_USUB:
                     case I_MUL:
                     case I_DIV:
-                    case I_REM:
+                    case I_REM: {
 
-                    break;
+                        break;
+                    }
 
                     default:
                     printf("Fatal error. Malformed instruction %s\n", tokens->tokenText);
@@ -207,7 +379,7 @@ int main(int argc, char ** argv) {
         return 1;
     }
 
-    if (!fillTokenFields(tokens)) {
+    if (!fillInstructionFields(tokens)) {
         printf("Invalid organization of tokens\n");
         destroyTokens(tokens);
         return 1;

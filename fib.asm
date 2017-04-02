@@ -7,8 +7,9 @@ Loop2:
         llo $r6, 0xFF
         lhi $r6, 0b01111111
         sw $r6, $r0
-        lw $led, 0($r6)
+        lw $led, -0($r6)
         llo $r7, 2
         lhi $r7, 0
         jmp $r7
-
+        llo $r7, -0b111
+        nop
