@@ -193,7 +193,7 @@ bool identifyTokens(struct LinkedToken * list) {
         } else if (isOffset(list)) {
             list->tokenType = OFFSET;
         } else {
-            printf("Unrecognized token %s\n", list->tokenText);
+            printf("Unrecognized token %s on line %d\n", list->tokenText, list->lineNum);
             return false;
         }
 

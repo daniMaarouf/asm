@@ -26,6 +26,7 @@ struct LinkedToken {
         IDENTIFIER,
         NONE
     } tokenType;
+    int lineNum;
 
     /* these fields are valid if token is an instruction */
     enum InstructionType instructionType;
@@ -46,7 +47,7 @@ struct LinkedToken {
     int textSize;
 
     /* used during code generation */
-    int numInstrsRequired;
+    int numPrimitives;
 
     struct LinkedToken * next;
 };

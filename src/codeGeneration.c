@@ -41,9 +41,9 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                     if (tokens->next->tokenText != NULL) {
                         printf("This type of token: %s\nshould not appear after a comment\n", 
                             tokens->next->tokenText);
-                        printf("Preceding comment: %s\n", tokens->tokenText);
+                        printf("Preceding comment: %s on line %d\n", tokens->tokenText, tokens->lineNum);
                     } else {
-                        printf("Invalid token after comment: %s\n", tokens->tokenText);
+                        printf("Invalid token after comment: %s on line %d\n", tokens->tokenText, tokens->lineNum);
                     }
                     return false;
                 }
@@ -54,6 +54,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                 if (tokens->next == NULL || (tokens->next->tokenType == NONE
                     && tokens->next->next == NULL)) {
                     printf("Can't have label at end of file. It should precede instruction\n");
+                    printf("Label %s on line number %d is invalid\n", tokens->tokenText, tokens->lineNum);
                     return false;
                 } else if (tokens->next->tokenType == LABEL
                     || tokens->next->tokenType == INSTRUCTION) {
@@ -62,8 +63,8 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                     bool found = false;
                     while (nextInstr != NULL && !found) {
                         if (nextInstr->tokenText == NULL) {
-                            printf("Label %s is invalid\n",
-                                tokens->tokenText);
+                            printf("Label %s on line number %d is invalid\n",
+                                tokens->tokenText, tokens->lineNum);
                             return false;
                         }
                         switch(nextInstr->tokenType) {
@@ -77,14 +78,14 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                             break;
 
                             default:
-                            printf("Invalid token %s after label token %s\n", 
-                                nextInstr->tokenText, tokens->tokenText);
+                            printf("Invalid token %s after label token %s on line %d\n", 
+                                nextInstr->tokenText, tokens->tokenText, tokens->lineNum);
                             return false;
                         } 
                     }
 
                     if (nextInstr == NULL || found == false) {
-                        printf("Label %s is invalid\n", tokens->tokenText);
+                        printf("Label %s on line %d is invalid\n", tokens->tokenText, tokens->lineNum);
                         return false;
                     }
 
@@ -94,9 +95,9 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                     if (tokens->next->tokenText != NULL) {
                         printf("This type of token: %s\nshould not appear after a label\n", 
                             tokens->next->tokenText);
-                        printf("Preceding label: %s\n", tokens->tokenText);
+                        printf("Preceding label: %s on line %d\n", tokens->tokenText, tokens->lineNum);
                     } else {
-                        printf("Invalid token after label: %s\n", tokens->tokenText);
+                        printf("Invalid token after label: %s on line %d\n", tokens->tokenText, tokens->lineNum);
                     }
                     return false;
                 }
@@ -122,13 +123,13 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                     case I_JMP: case I_PUSH: case I_POP: {
                         if (tokens->next == NULL || (tokens->next->tokenType == NONE
                     && tokens->next->next == NULL)) {
-                            printf("Instruction %s is missing its operand\n", tokens->tokenText);
+                            printf("Instruction %s on line %d is missing its operand\n", tokens->tokenText, tokens->lineNum);
                             return false;
                         } else if (tokens->next->tokenType == REGISTER) {
 
                             int regNum = regNumber(tokens->next->tokenText);
                             if (regNum == -1) {
-                                printf("Could not get register number for %s instruction\n", tokens->tokenText);
+                                printf("Could not get register number for %s instruction on line %d\n", tokens->tokenText, tokens->lineNum);
                                 return false;
                             }
                             tokens->next->registerNum = regNum;
@@ -147,7 +148,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                             bool valid = false;
                             int literalNum = decodeNum(tokens->next->tokenText, &valid);
                             if (!valid) {
-                                printf("Could not decode operand for %s instruction\n", tokens->tokenText);
+                                printf("Could not decode operand for %s instruction on line %d\n", tokens->tokenText, tokens->lineNum);
                                 return false;
                             }
                             tokens->next->intValue = literalNum;
@@ -162,7 +163,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                             tokens = tokens->next->next;
                             break;
                         } else {
-                            printf("Instruction %s has an invalid operand\n", tokens->tokenText);
+                            printf("Instruction %s on line %d has an invalid operand\n", tokens->tokenText, tokens->lineNum);
                             return false;
                         }
 
@@ -174,17 +175,17 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                     case I_LLO: case I_LHI: case I_LOAD: case I_NOT: {
                         if ((tokens->next == NULL || (tokens->next->tokenType == NONE
                     && tokens->next->next == NULL))) {
-                            printf("Instruction %s is missing its first operand\n", tokens->tokenText);
+                            printf("Instruction %s on line %d is missing its first operand\n", tokens->tokenText, tokens->lineNum);
                             return false;
                         } else if ((tokens->next->next == NULL || (tokens->next->next->tokenType == NONE
                     && tokens->next->next->next == NULL))) {
-                            printf("Instruction %s is missing its second operand\n", tokens->tokenText);
+                            printf("Instruction %s on line %d is missing its second operand\n", tokens->tokenText, tokens->lineNum);
                             return false;
                         } else if (tokens->next->tokenType == REGISTER) {
 
                             int regNum = regNumber(tokens->next->tokenText);
                             if (regNum == -1) {
-                                printf("Could not get register number for first operand in %s instruction\n", tokens->tokenText);
+                                printf("Could not get register number for first operand in %s instruction on line %d\n", tokens->tokenText, tokens->lineNum);
                                 return false;
                             }
                             tokens->next->registerNum = regNum;
@@ -194,7 +195,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
 
                                 regNum = regNumber(tokens->next->next->tokenText);
                                 if (regNum == -1) {
-                                    printf("Could not get register number for second operand in %s instruction\n", tokens->tokenText);
+                                    printf("Could not get register number for second operand in %s instruction on line %d\n", tokens->tokenText, tokens->lineNum);
                                     return false;
                                 }
                                 tokens->next->next->registerNum = regNum;
@@ -210,7 +211,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                                 bool valid = false;
                                 int literalNum = decodeNum(tokens->next->next->tokenText, &valid);
                                 if (!valid) {
-                                    printf("Could not decode second operand for %s instruction\n", tokens->tokenText);
+                                    printf("Could not decode second operand for %s instruction on line %d\n", tokens->tokenText, tokens->lineNum);
                                     return false;
                                 }
                                 tokens->next->next->intValue = literalNum;
@@ -232,7 +233,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                                 }
 
                                 if (opening == -1 || opening + 1 >= tokens->next->next->textSize) {
-                                    printf("Instruction %s has a malformed second operand\n", tokens->tokenText);
+                                    printf("Instruction %s on line %d has a malformed second operand\n", tokens->tokenText, tokens->lineNum);
                                     return false;
                                 }
 
@@ -243,7 +244,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
 
                                 int regNum = regNumber(registerPart);
                                 if (regNum == -1) {
-                                    printf("Instruction %s has an invalid second operand (offset)\n", tokens->tokenText);
+                                    printf("Instruction %s on line %d has an invalid second operand (offset)\n", tokens->tokenText, tokens->lineNum);
                                     return false;
                                 }
                                 tokens->next->next->registerNum = regNum;
@@ -251,7 +252,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                                 bool valid = false;
                                 int literalNum = decodeNum(decimalPart, &valid);
                                 if (!valid) {
-                                    printf("Could not decode second operand for %s instruction (offset)\n", tokens->tokenText);
+                                    printf("Could not decode second operand for %s instruction on line %d (offset)\n", tokens->tokenText, tokens->lineNum);
                                     return false;
                                 }
                                 tokens->next->next->intValue = literalNum;
@@ -259,12 +260,12 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                                 tokens = tokens->next->next->next;
                                 break;
                             } else {
-                                printf("Instruction %s has an invalid second operand\n", tokens->tokenText);
+                                printf("Instruction %s on line %d has an invalid second operand\n", tokens->tokenText, tokens->lineNum);
                                 return false;
                             }
 
                         } else {
-                            printf("Instruction %s has an invalid first operand\n", tokens->tokenText);
+                            printf("Instruction %s on line %d has an invalid first operand\n", tokens->tokenText, tokens->lineNum);
                             return false;
                         }
 
@@ -279,28 +280,28 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
 
                         if (tokens->next == NULL || (tokens->next->tokenType == NONE
                     && tokens->next->next == NULL)) {
-                            printf("Instruction %s is missing its first operand\n", tokens->tokenText);
+                            printf("Instruction %s on line %d is missing its first operand\n", tokens->tokenText, tokens->lineNum);
                             return false;
                         } else if (tokens->next->next == NULL || (tokens->next->next->tokenType == NONE
                     && tokens->next->next->next == NULL)) {
-                            printf("Instruction %s is missing its second operand\n", tokens->tokenText);
+                            printf("Instruction %s on line %d is missing its second operand\n", tokens->tokenText, tokens->lineNum);
                             return false;
                         } else if (tokens->next->next->next == NULL || (tokens->next->next->next->tokenType == NONE
                     && tokens->next->next->next->next == NULL)) {
-                            printf("Instruction %s is missing its third operand\n", tokens->tokenText);
+                            printf("Instruction %s on line %d is missing its third operand\n", tokens->tokenText, tokens->lineNum);
                             return false;
                         } else if (tokens->next->tokenType == REGISTER) {
 
                             int regNum = regNumber(tokens->next->tokenText);
                             if (regNum == -1) {
-                                printf("Could not get register number for first operand of %s instruction\n", tokens->tokenText);
+                                printf("Could not get register number for first operand of %s instruction on line %d\n", tokens->tokenText, tokens->lineNum);
                                 return false;
                             }
                             tokens->next->registerNum = regNum;
                             tokens->operandOne = tokens->next;
 
                         } else {
-                            printf("Instruction %s has an invalid first operand\n", tokens->tokenText);
+                            printf("Instruction %s on line %d has an invalid first operand\n", tokens->tokenText, tokens->lineNum);
                             return false;
                         }
 
@@ -308,7 +309,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
 
                             int regNum = regNumber(tokens->next->next->tokenText);
                             if (regNum == -1) {
-                                printf("Could not get register number for second operand of %s instruction\n", tokens->tokenText);
+                                printf("Could not get register number for second operand of %s instructionon line %d\n", tokens->tokenText, tokens->lineNum);
                                 return false;
                             }
                             tokens->next->next->registerNum = regNum;
@@ -328,14 +329,14 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                             bool valid = false;
                             int literalNum = decodeNum(tokens->next->next->tokenText, &valid);
                             if (!valid) {
-                                printf("Could not decode second operand for %s instruction\n", tokens->tokenText);
+                                printf("Could not decode second operand for %s instruction on line %d\n", tokens->tokenText, tokens->lineNum);
                                 return false;
                             }
                             tokens->next->next->intValue = literalNum;
                             tokens->operandTwo = tokens->next->next;
 
                         } else {
-                            printf("Instruction %s has an invalid second operand\n", tokens->tokenText);
+                            printf("Instruction %s on line %d has an invalid second operand\n", tokens->tokenText, tokens->lineNum);
                             return false;
                         }
 
@@ -343,7 +344,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
 
                             int regNum = regNumber(tokens->next->next->next->tokenText);
                             if (regNum == -1) {
-                                printf("Could not get register number for third operand of %s instruction\n", tokens->tokenText);
+                                printf("Could not get register number for third operand of %s instruction on line %d\n", tokens->tokenText, tokens->lineNum);
                                 return false;
                             }
                             tokens->next->next->next->registerNum = regNum;
@@ -357,7 +358,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                             bool valid = false;
                             int literalNum = decodeNum(tokens->next->next->next->tokenText, &valid);
                             if (!valid) {
-                                printf("Could not decode third operand for %s instruction\n", tokens->tokenText);
+                                printf("Could not decode third operand for %s instruction on line %d\n", tokens->tokenText, tokens->lineNum);
                                 return false;
                             }
                             tokens->next->next->next->intValue = literalNum;
@@ -372,7 +373,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                         && tokens->next->next->next->tokenType == IDENTIFIER) {
                             tokens->operandThree = tokens->next->next->next;
                         } else {
-                            printf("Instruction %s has an invalid third operand\n", tokens->tokenText);
+                            printf("Instruction %s on line %d has an invalid third operand\n", tokens->tokenText, tokens->lineNum);
                             return false;
                         }
 
@@ -381,7 +382,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                     }
 
                     default:
-                    printf("Fatal error. Malformed instruction %s\n", tokens->tokenText);
+                    printf("Fatal error. Malformed instruction %s on line %d\n", tokens->tokenText, tokens->lineNum);
                     return false;
                 }
 
