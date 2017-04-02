@@ -3,44 +3,8 @@
 #include <string.h>
 #include <stdbool.h>
 
-struct LinkedToken {
-    enum TokenType {
-        LABEL,
-        INSTRUCTION,
-        OPERAND,
-        DECIMAL_LITERAL,
-        HEX_LITERAL,
-        BIN_LITERAL,
-        OFFSET,
-        COMMENT,
-        STRING_LITERAL,
-        NONE
-    } tokenType;
-    char * tokenText;
-    int textSize;
-    struct LinkedToken * next;
-};
-
-struct LinkedToken * createToken() {
-    struct LinkedToken * temp = malloc(sizeof(struct LinkedToken));
-    if (temp == NULL) {
-        return NULL;
-    }
-    temp->tokenType = NONE;
-    temp->textSize = 0;
-    temp->tokenText = NULL;
-    temp->next = NULL;
-    return temp;
-}
-
-void destroyTokens(struct LinkedToken * list) {
-    while (list != NULL) {
-        free(list->tokenText);
-        struct LinkedToken * temp = list->next;
-        free(list);
-        list = temp;
-    }
-}
+#include "tokenData.h"
+#include "tokenIdentify.h"
 
 static void printUsageInfo(const char * binName);
 
@@ -49,13 +13,7 @@ static bool isWhitespace(char c) {
             || c == ' ' || c == '\r' || c == '\v');
 }
 
-static bool isDigit(char c) {
-    return (c >= '0' && c <= '9');
-}
 
-static bool isAlpha(char c) {
-    return (c >= 'a' && c <= 'z');
-}
 
 struct LinkedToken * tokenize(const char * filename) {
     if (filename == NULL) {
@@ -75,6 +33,7 @@ struct LinkedToken * tokenize(const char * filename) {
     struct LinkedToken * head = createToken();
     struct LinkedToken * iterator = head;
     if (head == NULL) {
+        fclose(fp);
         return NULL;
     }
 
@@ -92,13 +51,15 @@ struct LinkedToken * tokenize(const char * filename) {
             insideComment = true;
         }
 
-        if (isWhitespace(c) && !insideComment) {
+        if ((isWhitespace(c) || c == ',')
+         && !insideComment) {
             if (bufferIndex != 0) {
                 buffer[bufferIndex] = '\0';
                 int bufferLen = strlen(buffer);
                 iterator->tokenText = malloc(sizeof(char) * (bufferLen + 1));
                 if (iterator->tokenText == NULL) {
                     destroyTokens(head);
+                    fclose(fp);
                     return NULL;
                 }
                 iterator->textSize = bufferLen;
@@ -106,6 +67,7 @@ struct LinkedToken * tokenize(const char * filename) {
                 iterator->next = createToken();
                 if (iterator->next == NULL) {
                     destroyTokens(head);
+                    fclose(fp);
                     return NULL;
                 }
                 iterator = iterator->next;
@@ -118,59 +80,6 @@ struct LinkedToken * tokenize(const char * filename) {
 
     fclose(fp);
     return head;
-}
-
-bool isLabel(struct LinkedToken * token) {
-    if (token == NULL || token->tokenText == NULL
-            || token->tokenSize == 0) {
-        return false;
-    }
-    return (token->tokenText[token->tokenSize - 1] == ':');
-}
-
-bool isComment(struct LinkedToken * comment) {
-    if (token == NULL || token->tokenText == NULL
-            || token->tokenSize == 0) {
-        return false;
-    }
-    return (token->tokenText[0] == '#');
-}
-
-bool identifyTokens(struct LinkedToken * list) {
-    if (list == NULL) {
-        return false;
-    }
-
-    while (list != NULL) {
-        if (list->tokenText == NULL) {
-            break;
-        } else if (list->tokenSize == 0) {
-            return false;
-       }
-
-        if (isLabel(list)) {
-            list->tokenType = LABEL;
-        } else if (isComment(list)) {
-            list->tokenType = COMMENT;
-        }
-
-        list = list->next;
-    }
-
-    
-
-    return true;
-}
-
-void printTokens(struct LinkedToken * tokens) {
-    while (tokens != NULL) {
-        if (tokens->tokenText != NULL) {
-            printf("%s\n", tokens->tokenText);
-        } else {
-            break;
-        }
-        tokens = tokens->next;
-    }
 }
 
 int main(int argc, char ** argv) {
