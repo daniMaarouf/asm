@@ -117,10 +117,11 @@ int instructionType(struct LinkedToken * token) {
     }
 
     const char * mnemonics[] = {
-        "nop", "jmp", "llo", "lhi", "lw", "sw", "beq", "bne",
-        "and", "or", "xor", "slt", "uadd", "sadd", "ssub", "usub",
-        "blt", "bgt", "bge", "ble", "inc", "dec", "mul", "div",
-        "sll", "srl", "push", "pop", "not", "rem", "clear"
+        "nop", "jmp", "llo",  "lhi", "lw",   "sw",   "beq",  "bne",
+        "and", "or",  "xor",  "slt", "uadd", "sadd", "ssub", "usub",
+        "blt", "bgt", "bge",  "ble", "inc",  "dec",  "mul",  "div",
+        "sll", "srl", "push", "pop", "not",  "rem",  "clear", "out",
+        "load"
     };
 
     int size = sizeof(mnemonics)/sizeof(mnemonics[0]);
