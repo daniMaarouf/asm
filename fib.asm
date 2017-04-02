@@ -1,4 +1,4 @@
-        llo $r0, 1
+        llo $r0, 1      #test comment
         llo $r1, 1
 Loop2:
         Loop1:   uadd $r2, $r1, $r0
