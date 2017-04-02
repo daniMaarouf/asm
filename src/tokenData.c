@@ -105,8 +105,27 @@ struct LinkedToken * tokenize(const char * filename) {
             buffer[bufferIndex++] = c;
         }
     }
-
     fclose(fp);
+
+    if (bufferIndex != 0) {
+        buffer[bufferIndex] = '\0';
+        int bufferLen = strlen(buffer);
+        iterator->tokenText = malloc(sizeof(char) * (bufferLen + 1));
+        if (iterator->tokenText == NULL) {
+            destroyTokens(head);
+            return NULL;
+        }
+        iterator->textSize = bufferLen;
+        strcpy(iterator->tokenText, buffer);
+        iterator->next = createToken();
+        if (iterator->next == NULL) {
+            destroyTokens(head);
+            return NULL;
+        }
+        iterator = iterator->next;
+        bufferIndex = 0;
+    }
+
     return head;
 }
 

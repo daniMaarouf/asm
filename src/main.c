@@ -189,6 +189,37 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                     return false;
                 } else if (tokens->next->tokenType == LABEL
                     || tokens->next->tokenType == INSTRUCTION) {
+
+                    struct LinkedToken * nextInstr = tokens;
+                    bool found = false;
+                    while (nextInstr != NULL && !found) {
+                        if (nextInstr->tokenText == NULL) {
+                            printf("Label %s is invalid\n",
+                                tokens->tokenText);
+                            return false;
+                        }
+                        switch(nextInstr->tokenType) {
+                            case INSTRUCTION:
+                            tokens->nextInstruction = nextInstr;
+                            found = true;
+                            break;
+
+                            case LABEL:
+                            nextInstr = nextInstr->next;
+                            break;
+
+                            default:
+                            printf("Invalid token %s after label token %s\n", 
+                                nextInstr->tokenText, tokens->tokenText);
+                            return false;
+                        } 
+                    }
+
+                    if (nextInstr == NULL || found == false) {
+                        printf("Label %s is invalid\n", tokens->tokenText);
+                        return false;
+                    }
+
                     tokens = tokens->next;
                     break;
                 } else {
@@ -206,8 +237,6 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
             }
 
             case INSTRUCTION: {
-
-                /* TODO: point preceeding labels to instruction */
 
                 /* now make sure that surrounding tokens are organized
                 in way that is valid for the specific instruction */
@@ -367,16 +396,104 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                         break;
                     }
 
-                    
-
                     /* register then register then register or literal */
                     case I_AND: case I_OR: case I_XOR: case I_SLT: case I_UADD: case I_SADD:
                     case I_SSUB: case I_USUB: case I_MUL: case I_DIV: case I_REM: 
                     /* register then register or literal then register or literal */
                     case I_BEQ: case I_BNE: case I_BLT: case I_BGT: case I_BGE: case I_BLE: {
 
+                        if (tokens->next == NULL || (tokens->next->tokenType == NONE
+                    && tokens->next->next == NULL)) {
+                            printf("Instruction %s is missing its first operand\n", tokens->tokenText);
+                            return false;
+                        } else if (tokens->next->next == NULL || (tokens->next->next->tokenType == NONE
+                    && tokens->next->next->next == NULL)) {
+                            printf("Instruction %s is missing its second operand\n", tokens->tokenText);
+                            return false;
+                        } else if (tokens->next->next->next == NULL || (tokens->next->next->next->tokenType == NONE
+                    && tokens->next->next->next->next == NULL)) {
+                            printf("Instruction %s is missing its third operand\n", tokens->tokenText);
+                            return false;
+                        } else if (tokens->next->tokenType == REGISTER) {
 
+                            int regNum = regNumber(tokens->next->tokenText);
+                            if (regNum == -1) {
+                                printf("Could not get register number for first operand of %s instruction\n", tokens->tokenText);
+                                return false;
+                            }
+                            tokens->next->registerNum = regNum;
+                            tokens->operandOne = tokens->next;
 
+                        } else {
+                            printf("Instruction %s has an invalid first operand\n", tokens->tokenText);
+                            return false;
+                        }
+
+                        if (tokens->next->next->tokenType == REGISTER) {
+
+                            int regNum = regNumber(tokens->next->next->tokenText);
+                            if (regNum == -1) {
+                                printf("Could not get register number for second operand of %s instruction\n", tokens->tokenText);
+                                return false;
+                            }
+                            tokens->next->next->registerNum = regNum;
+                            tokens->operandTwo = tokens->next->next;
+
+                        } else if ((tokens->instructionType == I_BEQ
+                            || tokens->instructionType == I_BNE
+                            || tokens->instructionType == I_BLT
+                            || tokens->instructionType == I_BGT
+                            || tokens->instructionType == I_BGE
+                            || tokens->instructionType == I_BLE)
+                        && (tokens->next->next->tokenType == DECIMAL_LITERAL
+                            || tokens->next->next->tokenType == HEX_LITERAL
+                            || tokens->next->next->tokenType == BIN_LITERAL
+                            || tokens->next->next->tokenType == OCTAL_LITERAL)) {
+
+                            bool valid = false;
+                            int literalNum = decodeNum(tokens->next->next->tokenText, &valid);
+                            if (!valid) {
+                                printf("Could not decode second operand for %s instruction\n", tokens->tokenText);
+                                return false;
+                            }
+                            tokens->next->next->intValue = literalNum;
+                            tokens->operandTwo = tokens->next->next;
+
+                        } else {
+                            printf("Instruction %s has an invalid second operand\n", tokens->tokenText);
+                            return false;
+                        }
+
+                        if (tokens->next->next->next->tokenType == REGISTER) {
+
+                            int regNum = regNumber(tokens->next->next->next->tokenText);
+                            if (regNum == -1) {
+                                printf("Could not get register number for third operand of %s instruction\n", tokens->tokenText);
+                                return false;
+                            }
+                            tokens->next->next->next->registerNum = regNum;
+                            tokens->operandTwo = tokens->next->next->next;
+
+                        } else if (tokens->next->next->next->tokenType == DECIMAL_LITERAL
+                            || tokens->next->next->next->tokenType == HEX_LITERAL
+                            || tokens->next->next->next->tokenType == BIN_LITERAL
+                            || tokens->next->next->next->tokenType == OCTAL_LITERAL) {
+
+                            bool valid = false;
+                            int literalNum = decodeNum(tokens->next->next->next->tokenText, &valid);
+                            if (!valid) {
+                                printf("Could not decode third operand for %s instruction\n", tokens->tokenText);
+                                return false;
+                            }
+                            tokens->next->next->next->intValue = literalNum;
+                            tokens->operandTwo = tokens->next->next->next;
+
+                        } else {
+                            printf("Instruction %s has an invalid third operand\n", tokens->tokenText);
+                            return false;
+                        }
+
+                        tokens = tokens->next->next->next->next;
                         break;
                     }
 
