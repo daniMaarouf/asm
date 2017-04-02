@@ -897,6 +897,16 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                                 tokens->numPrimitives = 3;
                             }
                         }
+
+                        if (writeCode) {
+                            int i;
+                            for (i = 0; i < tokens->numPrimitives; i++) {
+                                fprintf(binary, "%u", instrs[i]);
+                                fprintf(vhdlText, "%d => \"", tokens->address + i);
+                                printBinary(instrs[i], vhdlText);
+                                fprintf(vhdlText, "\",\n");
+                            }
+                        }
                     
 
                         tokens = tokens->operandTwo->next;
@@ -970,6 +980,16 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                                 tokens->numPrimitives = 3;
                             }
                         }
+
+                        if (writeCode) {
+                            int i;
+                            for (i = 0; i < tokens->numPrimitives; i++) {
+                                fprintf(binary, "%u", instrs[i]);
+                                fprintf(vhdlText, "%d => \"", tokens->address + i);
+                                printBinary(instrs[i], vhdlText);
+                                fprintf(vhdlText, "\",\n");
+                            }
+                        }
                         
                         tokens = tokens->operandThree->next;
                         break;
@@ -1010,7 +1030,7 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                             return false;
                         }
 
-                        
+
 
 
                         if (tokens->instructionType == I_BEQ
@@ -1027,6 +1047,16 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                         if (tokens->operandThree->tokenType != REGISTER) {
                             tokens->numPrimitives += 2;
                         } 
+
+                        if (writeCode) {
+                            int i;
+                            for (i = 0; i < tokens->numPrimitives; i++) {
+                                fprintf(binary, "%u", instrs[i]);
+                                fprintf(vhdlText, "%d => \"", tokens->address + i);
+                                printBinary(instrs[i], vhdlText);
+                                fprintf(vhdlText, "\",\n");
+                            }
+                        }
                         
                         tokens = tokens->operandThree->next;
                         break;

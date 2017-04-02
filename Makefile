@@ -5,8 +5,12 @@ CFLAGS = -Wall -std=c99 -Iinclude
 
 all: assembler
 
-assembler: $(SRC_FILES) $(SRC_FILES)
+assembler: $(SRC_FILES) $(HEADER_FILES)
 	$(CC) $(CFLAGS) $(SRC_FILES) -o asm
+
+win: $(SRC_FILES) $(HEADER_FILES)
+	x86_64-w64-mingw32-gcc $(CFLAGS) $(SRC_FILES) -o asm.exe
+
 
 clean:
 	rm -f asm
