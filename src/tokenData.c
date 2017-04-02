@@ -18,6 +18,7 @@ struct LinkedToken * createToken() {
     temp->intValue = 0;
     temp->tokenText = NULL;
     temp->textSize = 0;
+    temp->numInstrsRequired = 0;
     temp->next = NULL;
     return temp;
 }

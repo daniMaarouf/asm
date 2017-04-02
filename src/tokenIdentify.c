@@ -10,6 +10,10 @@ static bool isAlpha(char c) {
     return (c >= 'a' && c <= 'z');
 }
 
+static bool isAlphanumeric(char c) {
+    return (isDigit(c) || isAlpha(c));
+}
+
 bool isLabel(struct LinkedToken * token) {
     if (token == NULL || token->tokenText == NULL
             || token->textSize < 2) {
@@ -174,16 +178,17 @@ bool identifyTokens(struct LinkedToken * list) {
             list->tokenType = STRING_LITERAL;
             printf("String literals not supported: %s\n", list->tokenText);
             return false;
-        } else if (allChars(list, isAlpha, 0)) {
+        } else if (allChars(list, isAlphanumeric, 0)) {
 
             int type = instructionType(list);
             if (type == -1) {
-                printf("Unrecognized token %s\n", list->tokenText);
-                return false;
+                list->tokenType = IDENTIFIER;
+            } else {
+                list->tokenType = INSTRUCTION;
+                list->instructionType = (enum InstructionType) type;
             }
 
-            list->tokenType = INSTRUCTION;
-            list->instructionType = (enum InstructionType) type;
+            
 
         } else if (isOffset(list)) {
             list->tokenType = OFFSET;

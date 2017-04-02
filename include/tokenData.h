@@ -23,6 +23,7 @@ struct LinkedToken {
         OFFSET,
         COMMENT,
         STRING_LITERAL,
+        IDENTIFIER,
         NONE
     } tokenType;
 
@@ -41,9 +42,11 @@ struct LinkedToken {
     /* this field is valid if token is a label */
     struct LinkedToken * nextInstruction;
 
-
     char * tokenText;
     int textSize;
+
+    /* used during code generation */
+    int numInstrsRequired;
 
     struct LinkedToken * next;
 };
