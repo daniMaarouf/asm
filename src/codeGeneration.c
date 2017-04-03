@@ -1075,9 +1075,8 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                             if (tokens->operandThree->tokenType == REGISTER) {
 
                                 /* load first operand into $t1 */
-                                instrs[0] = 0xCC00;
-                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
-                                instrs[0] |= 0x8;
+                                instrs[0] = 0xCC80;
+                                instrs[0] |= (tokens->operandTwo->registerNum);
 
                                 /* $rx = 0 */
                                 instrs[1] = 0xC000;
