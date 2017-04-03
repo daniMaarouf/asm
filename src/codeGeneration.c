@@ -499,7 +499,6 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                     case I_NOP: {
                         tokens->numPrimitives = 1;
                         instrs[0] = 0x0;
-                        tokens = tokens->next;
                         break;
                     }
 
@@ -512,7 +511,6 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                         instrs[4] = 0x10D0;
 
                         tokens->numPrimitives = 5;
-                        tokens = tokens->next;
                         break;
                     }
 
@@ -622,7 +620,6 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                             tokens->numPrimitives = 3;
                         }
 
-                        tokens = tokens->operandOne->next;
                         break;
                     }
 
@@ -686,7 +683,6 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                             }
                         }
 
-                        tokens = tokens->operandOne->next;
                         break;
                     }
 
@@ -767,7 +763,6 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                             }
                         }
 
-                        tokens = tokens->operandOne->next;
                         break;
                     }
 
@@ -863,7 +858,6 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                             }
                         }
 
-                        tokens = tokens->operandTwo->next;
                         break;
                     }
 
@@ -961,8 +955,6 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                             }
                         }
                     
-
-                        tokens = tokens->operandTwo->next;
                         break;
                     }
 
@@ -1078,7 +1070,6 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                                 instrs[14] = 0x0;
 
                                 tokens->numPrimitives = 15;
-
 
                             }
                         } else if (tokens->instructionType == I_DIV) {
@@ -1296,7 +1287,6 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                             }
                         }
                         
-                        tokens = tokens->operandThree->next;
                         break;
 
                     }
@@ -1350,7 +1340,6 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                             tokens->numPrimitives += 2;
                         } 
                         
-                        tokens = tokens->operandThree->next;
                         break;
                     }
                     
@@ -1367,6 +1356,18 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                         printWord(fp, instrs[i], tokens->address + i);
                     }
                 }
+
+                if (tokens->operandThree != NULL) {
+                    tokens = tokens->operandThree->next;
+                } else if (tokens->operandTwo != NULL) {
+                    tokens = tokens->operandTwo->next;
+                } else if (tokens->operandOne != NULL) {
+                    tokens = tokens->operandOne->next;
+                } else {
+                    tokens = tokens->next;
+                }   
+
+                
 
                 break;
             }
