@@ -1006,7 +1006,7 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                                 instrs[3] = 0x2E01;
                                 instrs[4] = 0x3E00;
 
-                                instrs[5] = 0x2F06;
+                                instrs[5] = 0x2F05;
                                 instrs[6] = 0x3F00;
 
                                 instrs[7] = 0x6C8F;
@@ -1047,7 +1047,7 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                                 instrs[4] = 0x2E01;
                                 instrs[5] = 0x3E00;
 
-                                instrs[6] = 0x2F06;
+                                instrs[6] = 0x2F05;
                                 instrs[7] = 0x3F00;
 
                                 instrs[8] = 0x6C8F;
