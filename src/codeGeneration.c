@@ -685,25 +685,16 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                         if (tokens->operandOne->tokenType == REGISTER) {
 
                             instrs[0] = 0x1000;
-                            instrs[0] |= (tokens->operandOne->registerNum << 8);
+                            instrs[0] |= (tokens->operandOne->registerNum << 4);
 
                             tokens->numPrimitives = 1;
-                        } else if (tokens->operandOne->tokenType == IDENTIFIER) {
-
-                            instrs[0] = 0x2D00;
-                            instrs[0] |= (tokens->operandOne->intValue & 0xFF);
-                            instrs[1] = 0x3D00;
-                            instrs[1] |= (((tokens->operandOne->intValue & 0xFF00)) >> 8);
-                            instrs[2] = 0x1D00;
-
-                            tokens->numPrimitives = 3;
                         } else {
-
+                            /* same code for label identifiers and immediate values */
                             instrs[0] = 0x2D00;
                             instrs[0] |= (tokens->operandOne->intValue & 0xFF);
                             instrs[1] = 0x3D00;
                             instrs[1] |= (((tokens->operandOne->intValue & 0xFF00)) >> 8);
-                            instrs[2] = 0x1D00;
+                            instrs[2] = 0x10D0;
 
                             tokens->numPrimitives = 3;
                         }
