@@ -460,19 +460,13 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
 
     uint16_t lastAddress = startAddress + 1;
 
-    uint16_t instrs[] = {
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-    };
-
     while (tokens != NULL) {
 
         if (tokens->tokenText == NULL || tokens->tokenType == NONE) {
             break;
         }
 
+        uint16_t instrs[22];
         int i;
         for (i = 0; i < sizeof(instrs)/sizeof(instrs[0]); i++) {
             instrs[i] = 0;
