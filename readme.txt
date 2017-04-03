@@ -18,3 +18,17 @@ file will probably be used
 9. Check push instruction again
 
 10. order of sw and lw operands
+
+11. Note: srl and division work but 
+are EXTREMELY slow. expect them to take
+1000x-10000x+ a regular instruction
+
+12. jmps can take labels
+branches can take labels as 3d operand
+branches can take literal as 2nd or 3rd operand
+
+arithmetic/logic instructions can take
+literal as 3rd operand
+
+13. add call and ret
+

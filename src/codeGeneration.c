@@ -140,7 +140,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                 switch(tokens->instructionType) {
 
                     /* no operands */
-                    case I_NOP: {
+                    case I_NOP: case I_RET: {
                         tokens = tokens->next;
                         break;
                     }
@@ -151,7 +151,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                     /* one register or int literal */
                     case I_PUSH: case I_OUT:
                     /* one register or int literal or label */
-                    case I_JMP: {
+                    case I_JMP: case I_CALL: {
                         if (tokens->next == NULL || (tokens->next->tokenType == NONE
                     && tokens->next->next == NULL)) {
                             printf("Instruction %s on line %d is missing its operand\n", tokens->tokenText, tokens->lineNum);
@@ -167,7 +167,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                             tokens->operandOne = tokens->next;
                             tokens = tokens->next->next;
                             break;
-                        } else if ((tokens->instructionType == I_JMP
+                        } else if (((tokens->instructionType == I_JMP || tokens->instructionType == I_CALL)
                             || tokens->instructionType == I_PUSH
                             || tokens->instructionType == I_OUT) 
                             && 
@@ -186,7 +186,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                             tokens->operandOne = tokens->next;
                             tokens = tokens->next->next;
                             break;
-                        } else if ((tokens->instructionType == I_JMP) 
+                        } else if (((tokens->instructionType == I_JMP || tokens->instructionType == I_CALL)) 
                             && tokens->next->tokenType == IDENTIFIER) {
                             tokens->operandOne = tokens->next;
                             tokens = tokens->next->next;
@@ -453,6 +453,7 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
     }
 
     if (writeCode) {
+        /* load stack pointer register B with 0x7FEF */
         printWord(fp, 0x2BEF, startAddress);
         printWord(fp, 0x3B7F, startAddress + 1);
     }
@@ -492,16 +493,25 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
 
                     case I_NOP: {
                         tokens->numPrimitives = 1;
-
-                        if (writeCode) {
-                            printWord(fp, 0x0, tokens->address);
-                        }
-
+                        instrs[0] = 0x0;
                         tokens = tokens->next;
                         break;
                     }
-                    
 
+                    case I_RET: {
+                        /* pop address off stack and jump to it */
+                        instrs[0] = 0x2C01;
+                        instrs[1] = 0x3C00;
+                        instrs[2] = 0xCBBC;
+                        instrs[3] = 0x4DB0;
+                        instrs[4] = 0x10D0;
+
+                        tokens->numPrimitives = 5;
+                        tokens = tokens->next;
+                        break;
+                    }
+
+                    /* must have exactly one register operand */
                     case I_CLEAR: case I_INC: case I_DEC: case I_POP: case I_NOT: case I_SLL: case I_SRL: {
                         if (tokens->operandOne == NULL) {
                             printf("Invalid first operand for %s instruction on line %d\n",
@@ -518,14 +528,13 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
 
                             instrs[0] = 0xC000;
                             instrs[0] |= (tokens->operandOne->registerNum << 8);
-                            instrs[0] |= 0x88;
-
+                            instrs[0] |= 0x88;  /* give zero register as 2nd and 3rd operand */
                             tokens->numPrimitives = 1;
 
                         } else if (tokens->instructionType == I_POP) {
                             instrs[0] = 0x2C01;
                             instrs[1] = 0x3C00;
-                            instrs[2] = 0xCBBC;
+                            instrs[2] = 0xCBBC; /* increment stack pointer */
 
                             instrs[3] = 0x4000;
                             instrs[3] |= (tokens->operandOne->registerNum << 8);
@@ -608,13 +617,6 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                             tokens->numPrimitives = 3;
                         }
 
-                        if (writeCode) {
-                            int i;
-                            for (i = 0; i < tokens->numPrimitives; i++) {
-                                printWord(fp, instrs[i], tokens->address + i);
-                            }
-                        }
-                    
                         tokens = tokens->operandOne->next;
                         break;
                     }
@@ -639,61 +641,51 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                         if (tokens->instructionType == I_PUSH) {
                             if (tokens->operandOne->tokenType == REGISTER) {
 
-                                instrs[0] = 0x50C0;
+                                instrs[0] = 0x50B0;
                                 instrs[0] |= tokens->operandOne->registerNum;
 
-                                instrs[1] = 0x2D01;
-                                instrs[2] = 0x3D00;
-                                instrs[3] = 0xECCD;
+                                instrs[1] = 0x2CFF;
+                                instrs[2] = 0x3CFF;
+                                instrs[3] = 0xCBBC;
 
                                 tokens->numPrimitives = 4;
                             } else {
 
-                                instrs[0] = 0x2D00;
+                                instrs[0] = 0x2C00;
                                 instrs[0] |= (tokens->operandOne->intValue & 0xFF);
-                                instrs[1] = 0x3D00;
+
+                                instrs[1] = 0x3C00;
                                 instrs[1] |= (((tokens->operandOne->intValue & 0xFF00)) >> 8);
 
-                                instrs[2] = 0x50CD;
+                                instrs[2] = 0x50BC;
 
-                                instrs[3] = 0x2D01;
-                                instrs[4] = 0x3D00;
-                                instrs[5] = 0xECCD;
+                                instrs[3] = 0x2CFF;
+                                instrs[4] = 0x3CFF;
+                                instrs[5] = 0xCBBC;
 
                                 tokens->numPrimitives = 6;
                             }
                         } else {
                             if (tokens->operandOne->tokenType == REGISTER) {
                                 tokens->numPrimitives = 1;
-                                instrs[0] = 0xCA00;
-                                instrs[0] |= (tokens->operandOne->registerNum << 4);
+                                instrs[0] = 0xCA80;
+                                instrs[0] |= tokens->operandOne->registerNum;
                             } else {
 
-                                instrs[0] = 0x2D00;
+                                instrs[0] = 0x2C00;
                                 instrs[0] |= (tokens->operandOne->intValue & 0xFF);
-                                instrs[1] = 0x3D00;
+                                instrs[1] = 0x3C00;
                                 instrs[1] |= (((tokens->operandOne->intValue & 0xFF00)) >> 8);
-                                instrs[2] |= 0xCAD8;
-
+                                instrs[2] |= 0xCA8C;
                                 tokens->numPrimitives = 3;
                             }
                         }
-
-                        if (writeCode) {
-                            int i;
-                            for (i = 0; i < tokens->numPrimitives; i++) {
-                                fprintf(fp, "%d => \"", tokens->address + i);
-                                printBinary(instrs[i], fp);
-                                fprintf(fp, "\",\n");
-                            }
-                        }
-                        
 
                         tokens = tokens->operandOne->next;
                         break;
                     }
 
-                    case I_JMP: {
+                    case I_JMP: case I_CALL: {
                         if (tokens->operandOne == NULL) {
                             printf("Invalid first operand for %s instruction on line %d\n",
                                 tokens->tokenText, tokens->lineNum);
@@ -711,37 +703,69 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                             return false;
                         }
 
-                        if (tokens->operandOne->tokenType == REGISTER) {
+                        if (tokens->instructionType == I_JMP) {
+                            if (tokens->operandOne->tokenType == REGISTER) {
 
-                            instrs[0] = 0x1000;
-                            instrs[0] |= (tokens->operandOne->registerNum << 4);
+                                instrs[0] = 0x1000;
+                                instrs[0] |= (tokens->operandOne->registerNum << 4);
 
-                            tokens->numPrimitives = 1;
+                                tokens->numPrimitives = 1;
+                            } else {
+                                /* same code for label identifiers and immediate values */
+                                instrs[0] = 0x2C00;
+                                instrs[0] |= (tokens->operandOne->intValue & 0xFF);
+                                instrs[1] = 0x3C00;
+                                instrs[1] |= (((tokens->operandOne->intValue & 0xFF00)) >> 8);
+                                instrs[2] = 0x10C0;
+
+                                tokens->numPrimitives = 3;
+                            }
                         } else {
-                            /* same code for label identifiers and immediate values */
-                            instrs[0] = 0x2D00;
-                            instrs[0] |= (tokens->operandOne->intValue & 0xFF);
-                            instrs[1] = 0x3D00;
-                            instrs[1] |= (((tokens->operandOne->intValue & 0xFF00)) >> 8);
-                            instrs[2] = 0x10D0;
+                            if (tokens->operandOne->tokenType == REGISTER) {
+                                instrs[0] = 0x2C00;
+                                instrs[0] |= ((tokens->address + 7) & 0xFF);
+                                instrs[1] = 0x3C00;
+                                instrs[1] |= (((tokens->address + 7) & 0xFF00) >> 8);
 
-                            tokens->numPrimitives = 3;
-                        }
+                                instrs[2] = 0x50BC;
 
-                        if (writeCode) {
-                            int i;
-                            for (i = 0; i < tokens->numPrimitives; i++) {
-                                fprintf(fp, "%d => \"", tokens->address + i);
-                                printBinary(instrs[i], fp);
-                                fprintf(fp, "\",\n");
+                                instrs[3] = 0x2CFF;
+                                instrs[4] = 0x3CFF;
+                                instrs[5] = 0xCBBC;
+                                instrs[6] = 0x1000;
+                                instrs[6] |= (tokens->operandOne->registerNum << 4);
+
+                                tokens->numPrimitives = 7;
+
+                            } else {
+
+                                instrs[0] = 0x2C00;
+                                instrs[0] |= ((tokens->address + 9) & 0xFF);
+                                instrs[1] = 0x3C00;
+                                instrs[1] |= (((tokens->address + 9) & 0xFF00) >> 8);
+
+                                instrs[2] = 0x50BC;
+
+                                instrs[3] = 0x2CFF;
+                                instrs[4] = 0x3CFF;
+                                instrs[5] = 0xCBBC;
+                                instrs[6] = 0x2C00;
+                                instrs[6] |= (tokens->operandOne->intValue & 0xFF);
+
+                                instrs[7] = 0x3C00;
+                                instrs[7] |= (((tokens->operandOne->intValue & 0xFF00)) >> 8);
+
+                                instrs[8] = 0x10C0;
+
+                                tokens->numPrimitives = 9;
                             }
                         }
-                        
 
                         tokens = tokens->operandOne->next;
                         break;
                     }
 
+                    /* register then reg or int literal */
                     case I_LLO: case I_LHI: case I_LOAD: {
                         if (tokens->operandOne == NULL) {
                             printf("Invalid first operand for %s instruction on line %d\n",
@@ -832,15 +856,6 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                                 tokens->numPrimitives = 1;
                             }
                         }
-                        
-                        if (writeCode) {
-                            int i;
-                            for (i = 0; i < tokens->numPrimitives; i++) {
-                                fprintf(fp, "%d => \"", tokens->address + i);
-                                printBinary(instrs[i], fp);
-                                fprintf(fp, "\",\n");
-                            }
-                        }
 
                         tokens = tokens->operandTwo->next;
                         break;
@@ -913,15 +928,6 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                                 instrs[2] |= 0xD;
 
                                 tokens->numPrimitives = 3;
-                            }
-                        }
-
-                        if (writeCode) {
-                            int i;
-                            for (i = 0; i < tokens->numPrimitives; i++) {
-                                fprintf(fp, "%d => \"", tokens->address + i);
-                                printBinary(instrs[i], fp);
-                                fprintf(fp, "\",\n");
                             }
                         }
                     
@@ -997,15 +1003,6 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                                 tokens->numPrimitives = 3;
                             }
                         }
-
-                        if (writeCode) {
-                            int i;
-                            for (i = 0; i < tokens->numPrimitives; i++) {
-                                fprintf(fp, "%d => \"", tokens->address + i);
-                                printBinary(instrs[i], fp);
-                                fprintf(fp, "\",\n");
-                            }
-                        }
                         
                         tokens = tokens->operandThree->next;
                         break;
@@ -1046,9 +1043,6 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                             return false;
                         }
 
-
-
-
                         if (tokens->instructionType == I_BEQ
                             || tokens->instructionType == I_BNE) {
 
@@ -1063,15 +1057,6 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                         if (tokens->operandThree->tokenType != REGISTER) {
                             tokens->numPrimitives += 2;
                         } 
-
-                        if (writeCode) {
-                            int i;
-                            for (i = 0; i < tokens->numPrimitives; i++) {
-                                fprintf(fp, "%d => \"", tokens->address + i);
-                                printBinary(instrs[i], fp);
-                                fprintf(fp, "\",\n");
-                            }
-                        }
                         
                         tokens = tokens->operandThree->next;
                         break;
@@ -1082,6 +1067,13 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                         tokens->tokenText, tokens->lineNum);
                     return false;
 
+                }
+
+                if (writeCode) {
+                    int i;
+                    for (i = 0; i < tokens->numPrimitives; i++) {
+                        printWord(fp, instrs[i], tokens->address + i);
+                    }
                 }
 
                 break;
