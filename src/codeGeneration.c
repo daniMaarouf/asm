@@ -1335,21 +1335,302 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                             return false;
                         }
 
-                        if (tokens->instructionType == I_BEQ
-                            || tokens->instructionType == I_BNE) {
+                        if (tokens->operandTwo->tokenType == REGISTER && tokens->operandThree->tokenType == REGISTER) {
 
-                            tokens->numPrimitives = 1;
+                            switch(tokens->instructionType) {
+                                case I_BEQ:
+                                instrs[0] = 0x6000;
+                                instrs[0] |= (tokens->operandOne->registerNum << 8);
+                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[0] |= (tokens->operandThree->registerNum);
+                                tokens->numPrimitives = 1;
+                                break;
+
+                                case I_BNE:
+                                instrs[0] = 0x7000;
+                                instrs[0] |= (tokens->operandOne->registerNum << 8);
+                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[0] |= (tokens->operandThree->registerNum);
+                                tokens->numPrimitives = 1;
+                                break;
+
+                                case I_BGT:
+                                instrs[0] = 0xBC00;
+                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[0] |= (tokens->operandOne->registerNum);
+                                instrs[1] = 0x7C80;
+                                instrs[1] |= (tokens->operandThree->registerNum);
+                                tokens->numPrimitives = 2;
+                                break;
+
+                                case I_BLT:
+                                instrs[0] = 0xBC00;
+                                instrs[0] |= (tokens->operandOne->registerNum << 4);
+                                instrs[0] |= (tokens->operandTwo->registerNum);
+                                instrs[1] = 0x7C80;
+                                instrs[1] |= (tokens->operandThree->registerNum);
+                                tokens->numPrimitives = 2;
+                                break;
+
+                                case I_BGE:
+                                instrs[0] = 0xBC00;
+                                instrs[0] |= (tokens->operandOne->registerNum << 4);
+                                instrs[0] |= (tokens->operandTwo->registerNum);
+                                instrs[1] = 0x6C80;
+                                instrs[1] |= (tokens->operandThree->registerNum);
+                                tokens->numPrimitives = 2;
+                                break;
+
+                                case I_BLE:
+                                instrs[0] = 0xBC00;
+                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[0] |= (tokens->operandOne->registerNum);
+                                instrs[1] = 0x6C80;
+                                instrs[1] |= (tokens->operandThree->registerNum);
+                                tokens->numPrimitives = 2;
+                                break;
+
+                                default:
+                                return false;
+                            }
+
+                        } else if (tokens->operandTwo->tokenType != REGISTER && tokens->operandThree->tokenType == REGISTER) {
+
+                            switch(tokens->instructionType) {
+                                case I_BEQ:
+                                instrs[0] = 0x2D00;
+                                instrs[0] |= (tokens->operandTwo->intValue & 0xFF);
+                                instrs[1] = 0x3D00;
+                                instrs[1] |= ((tokens->operandTwo->intValue & 0xFF00) >> 8);
+
+                                instrs[2] = 0x6000;
+                                instrs[2] |= (tokens->operandOne->registerNum << 8);
+                                instrs[2] |= 0xD0;
+                                instrs[2] |= (tokens->operandThree->registerNum);
+                                tokens->numPrimitives = 3;
+                                break;
+
+                                case I_BNE:
+                                instrs[0] = 0x2D00;
+                                instrs[0] |= (tokens->operandTwo->intValue & 0xFF);
+                                instrs[1] = 0x3D00;
+                                instrs[1] |= ((tokens->operandTwo->intValue & 0xFF00) >> 8);
+
+                                instrs[2] = 0x7000;
+                                instrs[2] |= (tokens->operandOne->registerNum << 8);
+                                instrs[2] |= 0xD0;
+                                instrs[2] |= (tokens->operandThree->registerNum);
+                                tokens->numPrimitives = 3;
+                                break;
+
+                                case I_BGT:
+                                instrs[0] = 0x2D00;
+                                instrs[0] |= (tokens->operandTwo->intValue & 0xFF);
+                                instrs[1] = 0x3D00;
+                                instrs[1] |= ((tokens->operandTwo->intValue & 0xFF00) >> 8);
+
+                                instrs[2] = 0xBCD0;
+                                instrs[2] |= (tokens->operandOne->registerNum);
+                                instrs[3] = 0x7C80;
+                                instrs[3] |= (tokens->operandThree->registerNum);
+                                tokens->numPrimitives = 4;
+                                break;
+
+                                case I_BLT:
+                                instrs[0] = 0x2D00;
+                                instrs[0] |= (tokens->operandTwo->intValue & 0xFF);
+                                instrs[1] = 0x3D00;
+                                instrs[1] |= ((tokens->operandTwo->intValue & 0xFF00) >> 8);
+
+                                instrs[2] = 0xBC00;
+                                instrs[2] |= (tokens->operandOne->registerNum << 4);
+                                instrs[2] |= 0xD;
+
+                                instrs[3] = 0x7C80;
+                                instrs[3] |= (tokens->operandThree->registerNum);
+                                tokens->numPrimitives = 4;
+                                break;
+
+                                case I_BGE:
+                                instrs[0] = 0x2D00;
+                                instrs[0] |= (tokens->operandTwo->intValue & 0xFF);
+                                instrs[1] = 0x3D00;
+                                instrs[1] |= ((tokens->operandTwo->intValue & 0xFF00) >> 8);
+
+                                instrs[2] = 0xBC00;
+                                instrs[2] |= (tokens->operandOne->registerNum << 4);
+                                instrs[2] |= 0xD;
+
+                                instrs[3] = 0x6C80;
+                                instrs[3] |= (tokens->operandThree->registerNum);
+                                tokens->numPrimitives = 4;
+                                break;
+
+                                case I_BLE:
+                                instrs[0] = 0x2D00;
+                                instrs[0] |= (tokens->operandTwo->intValue & 0xFF);
+                                instrs[1] = 0x3D00;
+                                instrs[1] |= ((tokens->operandTwo->intValue & 0xFF00) >> 8);
+
+                                instrs[2] = 0xBCD0;
+                                instrs[2] |= (tokens->operandOne->registerNum);
+
+                                instrs[3] = 0x6C80;
+                                instrs[3] |= (tokens->operandThree->registerNum);
+                                tokens->numPrimitives = 4;
+                                break;
+
+                                default:
+                                return false;
+                            }
+
+                        } else if (tokens->operandTwo->tokenType == REGISTER && tokens->operandThree->tokenType != REGISTER) {
+
+                            switch(tokens->instructionType) {
+                                case I_BEQ:
+                                instrs[0] = 0x2E00;
+                                instrs[0] |= (tokens->operandThree->intValue & 0xFF);
+                                instrs[1] = 0x3E00;
+                                instrs[1] |= ((tokens->operandThree->intValue & 0xFF00) >> 8);
+
+                                instrs[2] = 0x6000;
+                                instrs[2] |= (tokens->operandOne->registerNum << 8);
+                                instrs[2] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[2] |= 0xE;
+                                tokens->numPrimitives = 3;
+                                break;
+
+                                case I_BNE:
+                                instrs[0] = 0x2E00;
+                                instrs[0] |= (tokens->operandThree->intValue & 0xFF);
+                                instrs[1] = 0x3E00;
+                                instrs[1] |= ((tokens->operandThree->intValue & 0xFF00) >> 8);
+
+                                instrs[2] = 0x7000;
+                                instrs[2] |= (tokens->operandOne->registerNum << 8);
+                                instrs[2] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[2] |= 0xE;
+                                tokens->numPrimitives = 3;
+                                break;
+
+                                case I_BGT:
+                                instrs[0] = 0x2E00;
+                                instrs[0] |= (tokens->operandThree->intValue & 0xFF);
+                                instrs[1] = 0x3E00;
+                                instrs[1] |= ((tokens->operandThree->intValue & 0xFF00) >> 8);
+
+                                instrs[2] = 0xBC00;
+                                instrs[2] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[2] |= (tokens->operandOne->registerNum);
+
+                                instrs[3] = 0x7C8E;
+                                tokens->numPrimitives = 4;
+                                break;
+
+                                case I_BLT:
+                                instrs[0] = 0x2E00;
+                                instrs[0] |= (tokens->operandThree->intValue & 0xFF);
+                                instrs[1] = 0x3E00;
+                                instrs[1] |= ((tokens->operandThree->intValue & 0xFF00) >> 8);
+
+                                instrs[2] = 0xBC00;
+                                instrs[2] |= (tokens->operandOne->registerNum << 4);
+                                instrs[2] |= (tokens->operandTwo->registerNum);
+                                instrs[3] = 0x7C8E;
+                                tokens->numPrimitives = 4;
+                                break;
+
+                                case I_BGE:
+                                instrs[0] = 0x2E00;
+                                instrs[0] |= (tokens->operandThree->intValue & 0xFF);
+                                instrs[1] = 0x3E00;
+                                instrs[1] |= ((tokens->operandThree->intValue & 0xFF00) >> 8);
+
+                                instrs[2] = 0xBC00;
+                                instrs[2] |= (tokens->operandOne->registerNum << 4);
+                                instrs[2] |= (tokens->operandTwo->registerNum);
+                                instrs[3] = 0x6C8E;
+                                tokens->numPrimitives = 4;
+                                break;
+
+                                case I_BLE:
+                                instrs[0] = 0x2E00;
+                                instrs[0] |= (tokens->operandThree->intValue & 0xFF);
+                                instrs[1] = 0x3E00;
+                                instrs[1] |= ((tokens->operandThree->intValue & 0xFF00) >> 8);
+
+                                instrs[2] = 0xBC00;
+                                instrs[2] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[2] |= (tokens->operandOne->registerNum);
+                                instrs[3] = 0x6C8E;
+                                tokens->numPrimitives = 4;
+                                break;
+
+                                default:
+                                return false;
+                            }
+
                         } else {
-                            tokens->numPrimitives = 2;
+
+                            switch(tokens->instructionType) {
+                                case I_BEQ:
+                                instrs[0] = 0x6000;
+                                instrs[0] |= (tokens->operandOne->registerNum << 8);
+                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[0] |= (tokens->operandThree->registerNum);
+                                tokens->numPrimitives = 1;
+                                break;
+
+                                case I_BNE:
+                                instrs[0] = 0x7000;
+                                instrs[0] |= (tokens->operandOne->registerNum << 8);
+                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[0] |= (tokens->operandThree->registerNum);
+                                tokens->numPrimitives = 1;
+                                break;
+
+                                case I_BGT:
+                                instrs[0] = 0xBC00;
+                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[0] |= (tokens->operandOne->registerNum);
+                                instrs[1] = 0x7C80;
+                                instrs[1] |= (tokens->operandThree->registerNum);
+                                tokens->numPrimitives = 2;
+                                break;
+
+                                case I_BLT:
+                                instrs[0] = 0xBC00;
+                                instrs[0] |= (tokens->operandOne->registerNum << 4);
+                                instrs[0] |= (tokens->operandTwo->registerNum);
+                                instrs[1] = 0x7C80;
+                                instrs[1] |= (tokens->operandThree->registerNum);
+                                tokens->numPrimitives = 2;
+                                break;
+
+                                case I_BGE:
+                                instrs[0] = 0xBC00;
+                                instrs[0] |= (tokens->operandOne->registerNum << 4);
+                                instrs[0] |= (tokens->operandTwo->registerNum);
+                                instrs[1] = 0x6C80;
+                                instrs[1] |= (tokens->operandThree->registerNum);
+                                tokens->numPrimitives = 2;
+                                break;
+
+                                case I_BLE:
+                                instrs[0] = 0xBC00;
+                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[0] |= (tokens->operandOne->registerNum);
+                                instrs[1] = 0x6C80;
+                                instrs[1] |= (tokens->operandThree->registerNum);
+                                tokens->numPrimitives = 2;
+                                break;
+
+                                default:
+                                return false;
+                            }
+
                         }
 
-                        if (tokens->operandTwo->tokenType != REGISTER) {
-                            tokens->numPrimitives += 2;
-                        } 
-                        if (tokens->operandThree->tokenType != REGISTER) {
-                            tokens->numPrimitives += 2;
-                        } 
-                        
                         break;
                     }
                     
