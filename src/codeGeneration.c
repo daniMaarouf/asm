@@ -1202,7 +1202,7 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                                 instrs[16] = 0x6C8F;
 
                                 instrs[17] = 0xCE80;
-                                instrs[17] |= tokens->operandThree->registerNum << 8;
+                                instrs[17] |= tokens->operandThree->registerNum;
                                 instrs[18] = 0xCCCE;
 
                                 instrs[19] = 0xC000;
@@ -1251,20 +1251,24 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
 
                                 instrs[14] = 0x10F0;
 
-                                instrs[15] = 0x2F02;
+                                instrs[15] = 0x2F03;
                                 instrs[16] = 0x3F00;
 
                                 instrs[17] = 0x6C8F;
 
-                                instrs[18] = 0xCE80;
-                                instrs[18] |= tokens->operandThree->registerNum << 8;
-                                instrs[19] = 0xCCCE;
+                                instrs[18] = 0x2E00;
+                                instrs[18] |= (tokens->operandThree->intValue & 0xFF);
 
-                                instrs[20] = 0xC000;
-                                instrs[20] |= (tokens->operandOne->registerNum << 8);
-                                instrs[20] |= 0xC8;
+                                instrs[19] = 0x3E00;
+                                instrs[19] |= ((tokens->operandThree->intValue & 0xFF00) >> 8);
 
-                                tokens->numPrimitives = 21;
+                                instrs[20] = 0xCCCE;
+
+                                instrs[21] = 0xC000;
+                                instrs[21] |= (tokens->operandOne->registerNum << 8);
+                                instrs[21] |= 0xC8;
+
+                                tokens->numPrimitives = 22;
 
                             }
                         } else {
