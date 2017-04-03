@@ -24,6 +24,17 @@ static void printBinary(uint16_t num, FILE * stream) {
     return;
 }   
 
+static void printWord(FILE * stream, uint16_t word, uint16_t address) {
+    if (stream == NULL) {
+        return;
+    }
+
+    fprintf(stream, "%d => \"", address);
+    printBinary(word, stream);
+    fprintf(stream, "\",\n");
+    return;
+}
+
 /*
     when tokens reach this point they can be a
     linear sequence of tokens which have valid
@@ -433,26 +444,17 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
 
 
 */
-bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bool writeCode,
-    FILE * binary, FILE * vhdlText) {
+bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bool writeCode, FILE * fp) {
     if (tokens == NULL || startAddress >= 0x7000 || startAddress < 0x4000) {
         return false;
     }
-    if (writeCode && (binary == NULL || vhdlText == NULL)) {
+    if (writeCode && fp == NULL) {
         return false;
     }
 
     if (writeCode) {
-        uint16_t instr = 0x2CEF;
-        uint16_t instr2 = 0x3C7F;
-        fprintf(binary, "%u", instr);
-        fprintf(binary, "%u", instr2);
-        fprintf(vhdlText, "%d => \"", startAddress);
-        printBinary(instr, vhdlText);
-        fprintf(vhdlText, "\",\n");
-        fprintf(vhdlText, "%d => \"", startAddress + 1);
-        printBinary(instr2, vhdlText);
-        fprintf(vhdlText, "\",\n");
+        printWord(fp, 0x2CEF, startAddress);
+        printWord(fp, 0x3C7F, startAddress + 1);
     }
 
     uint16_t instrs[] = {
@@ -492,11 +494,7 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                         tokens->numPrimitives = 1;
 
                         if (writeCode) {
-                            instrs[0] = 0x0;
-                            fprintf(binary, "%u", instrs[0]);
-                            fprintf(vhdlText, "%d => \"", tokens->address);
-                            printBinary(instrs[0], vhdlText);
-                            fprintf(vhdlText, "\",\n");
+                            printWord(fp, 0x0, tokens->address);
                         }
 
                         tokens = tokens->next;
@@ -525,23 +523,23 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                             tokens->numPrimitives = 1;
 
                         } else if (tokens->instructionType == I_POP) {
-                            instrs[0] = 0x2D01;
-                            instrs[1] = 0x3D00;
-                            instrs[2] = 0xCCCD;
+                            instrs[0] = 0x2C01;
+                            instrs[1] = 0x3C00;
+                            instrs[2] = 0xCBBC;
 
                             instrs[3] = 0x4000;
                             instrs[3] |= (tokens->operandOne->registerNum << 8);
-                            instrs[3] |= 0xC0;
+                            instrs[3] |= 0xB0;
 
                             tokens->numPrimitives = 4;
                         } else if (tokens->instructionType == I_NOT){
 
-                            instrs[0] = 0x2DFF;
-                            instrs[1] = 0x3DFF;
+                            instrs[0] = 0x2CFF;
+                            instrs[1] = 0x3CFF;
                             instrs[2] = 0xA000;
                             instrs[2] |= (tokens->operandOne->registerNum << 8);
                             instrs[2] |= (tokens->operandOne->registerNum << 4);
-                            instrs[2] |= 0xD;
+                            instrs[2] |= 0xC;
 
                             tokens->numPrimitives = 3;
 
@@ -552,39 +550,71 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                             instrs[0] |= (tokens->operandOne->registerNum);
                             tokens->numPrimitives = 1;
                         } else if (tokens->instructionType == I_SRL) {
-                            /* TODO */
-                            tokens->numPrimitives = 5;
+
+                            instrs[0] = 0xCC00;
+                            instrs[0] |= (tokens->operandOne->registerNum << 4);
+                            instrs[0] |= 0x8;
+
+                            instrs[1] = 0xC000;
+                            instrs[1] |= (tokens->operandOne->registerNum << 8);
+                            instrs[1] |= 0x88;
+
+                            instrs[2] = 0x2D01;
+                            instrs[3] = 0x3D00;
+
+                            instrs[4] = 0x2E02;
+                            instrs[5] = 0x2E00;
+
+                            instrs[6] = 0xECCE;
+
+                            instrs[7] = 0xBECD;
+
+                            instrs[8] = 0x2F04;
+                            instrs[9] = 0x3F00;
+
+                            instrs[10] = 0x6EDF;
+
+                            instrs[11] = 0xC000;
+                            instrs[11] |= (tokens->operandOne->registerNum << 8);
+                            instrs[11] |= (tokens->operandOne->registerNum << 4);
+                            instrs[11] |= 0xD;
+
+                            instrs[12] = 0x2F00;
+                            instrs[12] |= ((tokens->address + 5) & 0xFF);
+
+                            instrs[13] = 0x3F00;
+                            instrs[13] |= (((tokens->address + 5) & 0xFF00) >> 8);
+
+                            instrs[14] = 0x10F0;
+
+                            instrs[15] = 0x0;
+
+                            tokens->numPrimitives = 16;
                         } else if (tokens->instructionType == I_INC) {
-                            instrs[0] = 0x2D01;
-                            instrs[1] = 0x3D00;
+                            instrs[0] = 0x2C01;
+                            instrs[1] = 0x3C00;
                             instrs[2] = 0xC000;
                             instrs[2] |= (tokens->operandOne->registerNum << 8);
                             instrs[2] |= (tokens->operandOne->registerNum << 4);
-                            instrs[2] |= 0xD;
-
+                            instrs[2] |= 0xC;
                             tokens->numPrimitives = 3; 
                         } else if (tokens->instructionType == I_DEC) {
-                            instrs[0] = 0x2D01;
-                            instrs[1] = 0x3D00;
-                            instrs[2] = 0xE000;
+                            instrs[0] = 0x2CFF;
+                            instrs[1] = 0x3CFF;
+                            instrs[2] = 0xC000;
                             instrs[2] |= (tokens->operandOne->registerNum << 8);
                             instrs[2] |= (tokens->operandOne->registerNum << 4);
-                            instrs[2] |= 0xD;
-
+                            instrs[2] |= 0xC;
                             tokens->numPrimitives = 3;
                         }
 
                         if (writeCode) {
                             int i;
                             for (i = 0; i < tokens->numPrimitives; i++) {
-                                fprintf(binary, "%u", instrs[i]);
-                                fprintf(vhdlText, "%d => \"", tokens->address + i);
-                                printBinary(instrs[i], vhdlText);
-                                fprintf(vhdlText, "\",\n");
+                                printWord(fp, instrs[i], tokens->address + i);
                             }
                         }
                     
-
                         tokens = tokens->operandOne->next;
                         break;
                     }
@@ -652,10 +682,9 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                         if (writeCode) {
                             int i;
                             for (i = 0; i < tokens->numPrimitives; i++) {
-                                fprintf(binary, "%u", instrs[i]);
-                                fprintf(vhdlText, "%d => \"", tokens->address + i);
-                                printBinary(instrs[i], vhdlText);
-                                fprintf(vhdlText, "\",\n");
+                                fprintf(fp, "%d => \"", tokens->address + i);
+                                printBinary(instrs[i], fp);
+                                fprintf(fp, "\",\n");
                             }
                         }
                         
@@ -702,10 +731,9 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                         if (writeCode) {
                             int i;
                             for (i = 0; i < tokens->numPrimitives; i++) {
-                                fprintf(binary, "%u", instrs[i]);
-                                fprintf(vhdlText, "%d => \"", tokens->address + i);
-                                printBinary(instrs[i], vhdlText);
-                                fprintf(vhdlText, "\",\n");
+                                fprintf(fp, "%d => \"", tokens->address + i);
+                                printBinary(instrs[i], fp);
+                                fprintf(fp, "\",\n");
                             }
                         }
                         
@@ -808,10 +836,9 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                         if (writeCode) {
                             int i;
                             for (i = 0; i < tokens->numPrimitives; i++) {
-                                fprintf(binary, "%u", instrs[i]);
-                                fprintf(vhdlText, "%d => \"", tokens->address + i);
-                                printBinary(instrs[i], vhdlText);
-                                fprintf(vhdlText, "\",\n");
+                                fprintf(fp, "%d => \"", tokens->address + i);
+                                printBinary(instrs[i], fp);
+                                fprintf(fp, "\",\n");
                             }
                         }
 
@@ -892,10 +919,9 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                         if (writeCode) {
                             int i;
                             for (i = 0; i < tokens->numPrimitives; i++) {
-                                fprintf(binary, "%u", instrs[i]);
-                                fprintf(vhdlText, "%d => \"", tokens->address + i);
-                                printBinary(instrs[i], vhdlText);
-                                fprintf(vhdlText, "\",\n");
+                                fprintf(fp, "%d => \"", tokens->address + i);
+                                printBinary(instrs[i], fp);
+                                fprintf(fp, "\",\n");
                             }
                         }
                     
@@ -975,10 +1001,9 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                         if (writeCode) {
                             int i;
                             for (i = 0; i < tokens->numPrimitives; i++) {
-                                fprintf(binary, "%u", instrs[i]);
-                                fprintf(vhdlText, "%d => \"", tokens->address + i);
-                                printBinary(instrs[i], vhdlText);
-                                fprintf(vhdlText, "\",\n");
+                                fprintf(fp, "%d => \"", tokens->address + i);
+                                printBinary(instrs[i], fp);
+                                fprintf(fp, "\",\n");
                             }
                         }
                         
@@ -1042,10 +1067,9 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                         if (writeCode) {
                             int i;
                             for (i = 0; i < tokens->numPrimitives; i++) {
-                                fprintf(binary, "%u", instrs[i]);
-                                fprintf(vhdlText, "%d => \"", tokens->address + i);
-                                printBinary(instrs[i], vhdlText);
-                                fprintf(vhdlText, "\",\n");
+                                fprintf(fp, "%d => \"", tokens->address + i);
+                                printBinary(instrs[i], fp);
+                                fprintf(fp, "\",\n");
                             }
                         }
                         
@@ -1080,13 +1104,17 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
         }
     }
     if (writeCode) {
-        fprintf(vhdlText, "others => \"0000000000000000\"\n");
+        fprintf(fp, "others => \"0000000000000000\"\n");
     }
    
 
     return true;
 }
 
+/*
+    does processing including calculating cumulative addresses for label
+    resolution and also converting numbers to twos complement
+*/
 bool resolveLabels(struct LinkedToken * tokens, uint16_t startAddress) {
     if (tokens == NULL || startAddress >= 0x7000 || startAddress < 0x4000) {
         return false;
@@ -1151,7 +1179,18 @@ bool resolveLabels(struct LinkedToken * tokens, uint16_t startAddress) {
                 return false;
             }
 
+        } else if (iterator->tokenType == DECIMAL_LITERAL
+            || iterator->tokenType == HEX_LITERAL
+            || iterator->tokenType == BIN_LITERAL
+            || iterator->tokenType == OCTAL_LITERAL
+            || iterator->tokenType == OFFSET) {
+            if (iterator->intValue < 0) {
+                /* twos complement representation */
+                iterator->intValue = 0x10000 + iterator->intValue;
+            }
         }
+
+
         iterator = iterator->next;
 
     }
@@ -1165,7 +1204,7 @@ bool generateCode(struct LinkedToken * tokens, const char * fileLoc, uint16_t st
     }
 
     /* first stage evaluation where just lengths of instructions are obtained */
-    if (!evaluateInstructions(tokens, startAddress, false, NULL, NULL)) {
+    if (!evaluateInstructions(tokens, startAddress, false, NULL)) {
         printf("Problem evaluating code. Some of your instructions may be malformed\n");
         return false;
     }
@@ -1178,10 +1217,7 @@ bool generateCode(struct LinkedToken * tokens, const char * fileLoc, uint16_t st
     int fileNameLen = strlen(fileLoc);
 
     char * textFileName = malloc(sizeof(char) * (fileNameLen + 1));
-    char * binaryName = malloc(sizeof(char) * (fileNameLen + 1));
-    if (textFileName == NULL || binaryName == NULL) {
-        free(textFileName);
-        free(binaryName);
+    if (textFileName == NULL) {
         return false;
     }
     strcpy(textFileName, fileLoc);
@@ -1189,36 +1225,21 @@ bool generateCode(struct LinkedToken * tokens, const char * fileLoc, uint16_t st
     textFileName[fileNameLen - 2] = 'x';
     textFileName[fileNameLen - 1] = 't';
 
-    strcpy(binaryName, fileLoc);
-    binaryName[fileNameLen - 4] = '\0';
-
     FILE * textFile = fopen(textFileName, "w");
     if (textFile == NULL) {
         free(textFileName);
-        free(binaryName);
-        return false;
-    }
-    FILE * binaryFile = fopen(binaryName, "wb");
-    if (binaryFile == NULL) {
-        fclose(textFile);
-        free(textFileName);
-        free(binaryName);
         return false;
     }
 
-    if (!evaluateInstructions(tokens, startAddress, true, binaryFile, textFile)) {
+    if (!evaluateInstructions(tokens, startAddress, true, textFile)) {
         printf("Could not write code to file\n");
         fclose(textFile);
-        fclose(binaryFile);
         free(textFileName);
-        free(binaryName);
         return false;
     }
 
     fclose(textFile);
-    fclose(binaryFile);
     free(textFileName);
-    free(binaryName);
     return true;
 }
 
