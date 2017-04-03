@@ -453,8 +453,8 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
     }
 
     if (writeCode) {
-        printWord(fp, 0x2CEF, startAddress);
-        printWord(fp, 0x3C7F, startAddress + 1);
+        printWord(fp, 0x2BEF, startAddress);
+        printWord(fp, 0x3B7F, startAddress + 1);
     }
 
     uint16_t instrs[] = {
@@ -1315,11 +1315,10 @@ static int decodeNum(const char * numStr, bool * valid) {
     } else {
 
         int total = 0;
-        int weight = 0;
+        int weight = 1;
         int i;
 
         if (numStr[neg + 1] == 'x') {
-            weight = 16;
             for (i = numLen - 1; i >= 2 + neg; i--) {
                 if (!((numStr[i] >= '0' && numStr[i] <= '9') 
                     || (numStr[i] >= 'a' && numStr[i] <= 'f'))) {
@@ -1334,7 +1333,6 @@ static int decodeNum(const char * numStr, bool * valid) {
                 weight *= 16;
             }
         } else if (numStr[neg + 1] == 'o') {
-            weight = 8;
             for (i = numLen - 1; i >= 2 + neg; i--) {
                 if (!(numStr[i] >= '0' && numStr[i] <= '7')) {
                     *valid = false;
@@ -1344,7 +1342,6 @@ static int decodeNum(const char * numStr, bool * valid) {
                 weight *= 8;
             }
         } else if (numStr[neg + 1] == 'b') {
-            weight = 2;
             for (i = numLen - 1; i >= 2 + neg; i--) {
                 if (!(numStr[i] >= '0' && numStr[i] <= '1')) {
                     *valid = false;
@@ -1355,7 +1352,6 @@ static int decodeNum(const char * numStr, bool * valid) {
             }
             
         } else {
-            weight = 10;
             for (i = numLen - 1; i >= neg; i--) {
                 if (!(numStr[i] >= '0' && numStr[i] <= '9')) {
                     *valid = false;
