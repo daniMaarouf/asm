@@ -1115,6 +1115,12 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                                 tokens->numPrimitives = 15;
 
                             } else {
+
+                                if (tokens->operandThree->intValue == 0) {
+                                    printf("Don't divide by 0. You will halt the processor\n");
+                                    return false;
+                                }
+
                                 instrs[0] = 0xCC00;
                                 instrs[0] |= (tokens->operandTwo->registerNum << 4);
                                 instrs[0] |= 0x8;

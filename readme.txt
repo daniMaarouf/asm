@@ -32,3 +32,5 @@ literal as 3rd operand
 
 13. add call and ret
 
+14. All numbers treated as unsigned for
+MUL, DIV, SRL, REM
