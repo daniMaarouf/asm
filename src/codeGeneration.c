@@ -458,6 +458,8 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
         printWord(fp, 0x3B7F, startAddress + 1);
     }
 
+    uint16_t lastAddress = startAddress + 1;
+
     uint16_t instrs[] = {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1700,7 +1702,16 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                 if (writeCode) {
                     int i;
                     for (i = 0; i < tokens->numPrimitives; i++) {
-                        printWord(fp, instrs[i], tokens->address + i);
+
+                        if (tokens->address + i != lastAddress + 1) {
+                            printf("An issue was detected when translating %s instruction on line %d\n", tokens->tokenText, tokens->lineNum);
+                            printf("Please ensure code generation code is correct\n");
+                            return false;
+                        }
+
+                        lastAddress = tokens->address + i;
+                        printWord(fp, instrs[i], lastAddress);
+
                     }
                 }
 
