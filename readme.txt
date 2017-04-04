@@ -33,4 +33,9 @@ literal as 3rd operand
 13. add call and ret
 
 14. All numbers treated as unsigned for
-MUL, DIV, SRL, REM
+MUL, DIV, SRL, REM but done use numbers
+bigger than largest signed
+
+15. FIX: only zero register at end of initialization
+sequence
+check lengths in code generate
