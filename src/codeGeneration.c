@@ -1586,6 +1586,14 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                             }
 
                         } else if (tokens->operandTwo->tokenType == REGISTER && tokens->operandThree->tokenType != REGISTER) {
+                            
+                            if (tokens->instructionType == I_BEQ || tokens->instructionType == I_BNE) {
+                                
+                                
+
+                            } else {
+
+                            }
 
                             switch(tokens->instructionType) {
                                 case I_BEQ:

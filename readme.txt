@@ -39,3 +39,8 @@ bigger than largest signed
 15. FIX: only zero register at end of initialization
 sequence
 check lengths in code generate
+
+16. adding out instruction changes result?
+
+17. when branches are given a literal value
+it will be treated as offset
