@@ -60,7 +60,7 @@ int main(int argc, char ** argv) {
         destroyTokens(tokens);
         return 1;
     }
-
+    printf("Assembly was successful\n");
     destroyTokens(tokens);
     return 0;
 }

@@ -1,13 +1,13 @@
-    load $r0 47
+    load $r0 0b00001110
+    srl $r1 $r0
+    out $r1
+    srl $r1 0b00001111
+    out $r1
+    load $r0 45
     div $r1, $r0, 10
-    out $r1         #output should be 4
-    load $r0 49
-    div $r1, $r0, 10
-    out $r1         #output should be 4
-    load $r0 50
-    div $r1, $r0, 10
-    out $r1         #output should be 5
-    load $r0 0xFE
-    div $r1, $r0, 2
-    out $r1         #output should be 0x7F
-
+    out $r1
+    load $r2 19
+    div $r3, $r2, $r1
+    out $r3
+    sll $r3, $r3
+    out $r3             #should be 8
