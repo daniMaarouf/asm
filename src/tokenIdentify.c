@@ -131,7 +131,7 @@ int instructionType(struct LinkedToken * token) {
         "and", "or",  "xor",  "slt", "uadd", "sadd", "ssub", "usub",
         "blt", "bgt", "bge",  "ble", "inc",  "dec",  "mul",  "div",
         "sll", "srl", "push", "pop", "not",  "rem",  "clear", "out",
-        "load", "call", "ret"
+        "load", "call", "ret", "wait"
     };
 
     int size = sizeof(mnemonics)/sizeof(mnemonics[0]);

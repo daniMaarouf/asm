@@ -149,7 +149,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                     case I_CLEAR: case I_INC: case I_DEC: case I_POP: 
                     case I_NOT:
                     /* one register or int literal */
-                    case I_PUSH: case I_OUT:
+                    case I_PUSH: case I_OUT: case I_WAIT:
                     /* one register or int literal or label */
                     case I_JMP: case I_CALL: {
                         if (tokens->next == NULL || (tokens->next->tokenType == NONE
@@ -169,7 +169,8 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                             break;
                         } else if (((tokens->instructionType == I_JMP || tokens->instructionType == I_CALL)
                             || tokens->instructionType == I_PUSH
-                            || tokens->instructionType == I_OUT) 
+                            || tokens->instructionType == I_OUT
+                            || tokens->instructionType == I_WAIT) 
                             && 
                             (tokens->next->tokenType == DECIMAL_LITERAL
                                 || tokens->next->tokenType == HEX_LITERAL
@@ -466,7 +467,7 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
             break;
         }
 
-        uint16_t instrs[25];
+        uint16_t instrs[30];
         unsigned int i;
         for (i = 0; i < sizeof(instrs)/sizeof(instrs[0]); i++) {
             instrs[i] = 0;
@@ -573,7 +574,7 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                     }
 
                     /* pop actually a bit different from push, handle this later */
-                    case I_PUSH: case I_OUT: {
+                    case I_PUSH: case I_OUT: case I_WAIT: {
                         if (tokens->operandOne == NULL) {
                             printf("Invalid first operand for %s instruction on line %d\n",
                                 tokens->tokenText, tokens->lineNum);
@@ -616,7 +617,7 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
 
                                 tokens->numPrimitives = 6;
                             }
-                        } else {
+                        } else if (tokens->instructionType == I_OUT){
                             if (tokens->operandOne->tokenType == REGISTER) {
                                 tokens->numPrimitives = 1;
                                 instrs[0] = 0xCA80;
@@ -630,6 +631,118 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                                 instrs[2] = 0xCA8C;
                                 tokens->numPrimitives = 3;
                             }
+                        } else if (tokens->instructionType == I_WAIT) {
+                            if (tokens->operandOne->tokenType == REGISTER) {
+                          
+                                instrs[0] = 0xCC88;
+                                instrs[1] = 0xCD88;
+
+                                /* maigc number 2702 for inner loop */
+                                instrs[2] = 0x2EA3;
+                                instrs[3] = 0x3E02;
+
+                                instrs[4] = 0x2F06;
+                                instrs[5] = 0x3F00;
+
+                                instrs[6] = 0x6CEF;
+
+                                instrs[7] = 0x2E01;
+                                instrs[8] = 0x3E00;
+
+                                instrs[9] = 0xCCCE;
+
+                                instrs[10] = 0x2F00;
+                                instrs[10] |= ((tokens->address + 2) & 0xFF);
+
+                                instrs[11] = 0x3F00;
+                                instrs[11] |= ((tokens->address + 2) & 0xFF00) >> 8;
+
+                                instrs[12] = 0x10F0;
+                                
+                                instrs[13] = 0xCE80;
+                                instrs[13] |= (tokens->operandOne->registerNum);
+
+                                instrs[14] = 0x0;
+
+                                instrs[15] = 0x2F07;
+                                instrs[16] = 0x3F00;
+
+                                instrs[17] = 0x6DEF;
+
+                                instrs[18] = 0x2E01;
+                                instrs[19] = 0x3E00;
+
+                                instrs[20] = 0xCDDE;
+
+                                instrs[21] = 0x2F00;
+                                instrs[21] |= ((tokens->address + 2) & 0xFF);
+
+                                instrs[22] = 0x3F00;
+                                instrs[22] |= ((tokens->address + 2) & 0xFF00) >> 8;
+                                instrs[23] = 0xCC88;
+                                instrs[24] = 0x10F0;
+
+                                instrs[25] = 0x0;
+                                
+                                tokens->numPrimitives = 26;
+ 
+
+                            } else {
+                          
+                                instrs[0] = 0xCC88;
+                                instrs[1] = 0xCD88;
+
+                                /* maigc number 2702 for inner loop */
+                                instrs[2] = 0x2EA3;
+                                instrs[3] = 0x3E02;
+
+                                instrs[4] = 0x2F06;
+                                instrs[5] = 0x3F00;
+
+                                instrs[6] = 0x6CEF;
+
+                                instrs[7] = 0x2E01;
+                                instrs[8] = 0x3E00;
+
+                                instrs[9] = 0xCCCE;
+
+                                instrs[10] = 0x2F00;
+                                instrs[10] |= ((tokens->address + 2) & 0xFF);
+
+                                instrs[11] = 0x3F00;
+                                instrs[11] |= ((tokens->address + 2) & 0xFF00) >> 8;
+
+                                instrs[12] = 0x10F0;
+                                
+                                instrs[13] = 0x2E00;
+                                instrs[13] |= (tokens->operandOne->intValue & 0xFF);
+
+                                instrs[14] = 0x3E00;
+                                instrs[14] |= (tokens->operandOne->intValue & 0xFF00) >> 8;
+
+                                instrs[15] = 0x2F07;
+                                instrs[16] = 0x3F00;
+
+                                instrs[17] = 0x6DEF;
+
+                                instrs[18] = 0x2E01;
+                                instrs[19] = 0x3E00;
+
+                                instrs[20] = 0xCDDE;
+
+                                instrs[21] = 0x2F00;
+                                instrs[21] |= ((tokens->address + 2) & 0xFF);
+
+                                instrs[22] = 0x3F00;
+                                instrs[22] |= ((tokens->address + 2) & 0xFF00) >> 8;
+                                instrs[23] = 0xCC88;
+                                instrs[24] = 0x10F0;
+
+                                instrs[25] = 0x0;
+                                
+                                tokens->numPrimitives = 26;
+                            }
+
                         }
 
                         break;

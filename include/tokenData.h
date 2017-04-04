@@ -6,7 +6,7 @@ enum InstructionType {
     I_AND = 8, I_OR = 9, I_XOR = 10, I_SLT = 11, I_UADD = 12, I_SADD = 13, I_SSUB = 14, I_USUB = 15,
     I_BLT = 16, I_BGT = 17, I_BGE = 18, I_BLE = 19, I_INC = 20, I_DEC = 21, I_MUL = 22, I_DIV = 23,
     I_SLL = 24, I_SRL = 25, I_PUSH = 26, I_POP = 27, I_NOT = 28, I_REM = 29, I_CLEAR = 30, I_OUT = 31,
-    I_LOAD = 32, I_CALL = 33, I_RET = 34, I_OTHER = 35,
+    I_LOAD = 32, I_CALL = 33, I_RET = 34, I_WAIT = 35, I_OTHER = 36
 };
 
 struct LinkedToken {
