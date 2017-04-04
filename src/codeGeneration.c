@@ -1587,12 +1587,17 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
 
                         } else if (tokens->operandTwo->tokenType == REGISTER && tokens->operandThree->tokenType != REGISTER) {
                             
-                            if (tokens->instructionType == I_BEQ || tokens->instructionType == I_BNE) {
-                                
-                                
-
-                            } else {
-
+                            if (tokens->operandThree->tokenType == IDENTIFIER) {
+                                int offset;
+                                if (tokens->instructionType == I_BEQ || tokens->instructionType == I_BNE) {
+                                    offset = tokens->operandThree->intValue - (tokens->address + 3);
+                                } else {
+                                    offset = tokens->operandThree->intValue - (tokens->address + 4);
+                                }
+                                if (offset < 0) {
+                                    offset += 0x10000;
+                                }
+                                tokens->operandThree->intValue = offset;
                             }
 
                             switch(tokens->instructionType) {
@@ -1683,6 +1688,19 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                             }
 
                         } else {
+
+                            if (tokens->operandThree->tokenType == IDENTIFIER) {
+                                int offset;
+                                if (tokens->instructionType == I_BEQ || tokens->instructionType == I_BNE) {
+                                    offset = tokens->operandThree->intValue - (tokens->address + 5);
+                                } else {
+                                    offset = tokens->operandThree->intValue - (tokens->address + 6);
+                                }
+                                if (offset < 0) {
+                                    offset += 0x10000;
+                                }
+                                tokens->operandThree->intValue = offset;
+                            }
 
                             switch(tokens->instructionType) {
                                 case I_BEQ:

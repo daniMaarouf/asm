@@ -44,3 +44,8 @@ check lengths in code generate
 
 17. when branches are given a literal value
 it will be treated as offset
+
+18. note: order of operands in multiply
+instruction can greatly impact performance,
+put the number you expect to be smaller
+as the last operand
