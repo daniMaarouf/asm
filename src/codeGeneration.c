@@ -254,7 +254,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                                 && (tokens->next->next->tokenType == OFFSET)) {
 
                                 int opening = -1;
-                                int i;
+                                unsigned int i;
                                 for (i = 0; i < tokens->next->next->textSize; i++) {
                                     if (tokens->next->next->tokenText[i] == '(') {
                                         opening = i;
@@ -262,7 +262,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                                     }
                                 }
 
-                                if (opening == -1 || opening + 1 >= tokens->next->next->textSize) {
+                                if (opening == -1 || opening + 1 >= (int) tokens->next->next->textSize) {
                                     printf("Instruction %s on line %d has a malformed second operand\n", tokens->tokenText, tokens->lineNum);
                                     return false;
                                 }
@@ -467,7 +467,7 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
         }
 
         uint16_t instrs[25];
-        int i;
+        unsigned int i;
         for (i = 0; i < sizeof(instrs)/sizeof(instrs[0]); i++) {
             instrs[i] = 0;
         }
@@ -1802,10 +1802,10 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                 }
 
                 if (writeCode) {
-                    int i;
+                    unsigned int i;
                     for (i = 0; i < tokens->numPrimitives; i++) {
 
-                        if (tokens->address + i != lastAddress + 1) {
+                        if ((int) (tokens->address + i) != lastAddress + 1) {
                             printf("An issue was detected when translating %s instruction on line %d\n", tokens->tokenText, tokens->lineNum);
                             printf("Please ensure code generation code is correct\n");
                             return false;

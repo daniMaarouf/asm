@@ -28,7 +28,7 @@ bool allChars(struct LinkedToken * token, bool (*func)(char), int startIndex) {
         return false;
     }
 
-    int i;
+    unsigned int i;
     for (i = startIndex; i < token->textSize; i++) {
         if (!func(token->tokenText[i])) {
             return false;
@@ -53,7 +53,7 @@ bool nonDecimalLiteral(struct LinkedToken * token, char c) {
     if (token->tokenText[0 + offset] != '0' || token->tokenText[1 + offset] != c) {
         return false;
     }
-    int i;
+    unsigned int i;
     for (i = 2 + offset; i < token->textSize; i++) {
 
         if (!( (token->tokenText[i] >= '0' && token->tokenText[i] <= '9') 
@@ -79,7 +79,7 @@ bool isOffset(struct LinkedToken * token) {
     }
 
     int openLoc = -1, closeLoc = -1, i;
-    for (i = 0; i < token->textSize; i++) {
+    for (i = 0; i < (int) token->textSize; i++) {
         if (token->tokenText[i] == '(') {
             openLoc = i;
             break;
@@ -102,7 +102,7 @@ bool isOffset(struct LinkedToken * token) {
     }
 
     if (openLoc == -1 || closeLoc == -1 
-        || openLoc > closeLoc || openLoc >= token->textSize - 2) {
+        || openLoc > closeLoc || openLoc >= (int) token->textSize - 2) {
         return false;
     }
 
