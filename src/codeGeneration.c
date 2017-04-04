@@ -147,7 +147,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
 
                     /* one register */
                     case I_CLEAR: case I_INC: case I_DEC: case I_POP: 
-                    case I_NOT: case I_SLL: case I_SRL: 
+                    case I_NOT:
                     /* one register or int literal */
                     case I_PUSH: case I_OUT:
                     /* one register or int literal or label */
@@ -200,7 +200,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                     }
 
                     /* register then register or literal */
-                    case I_LLO: case I_LHI: case I_LOAD: 
+                    case I_LLO: case I_LHI: case I_LOAD: case I_SLL: case I_SRL: 
                     /* register then register or literal or offset */
                     case I_LW: case I_SW:  {
                         if ((tokens->next == NULL || (tokens->next->tokenType == NONE
@@ -511,7 +511,7 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                     }
 
                     /* must have exactly one register operand */
-                    case I_CLEAR: case I_INC: case I_DEC: case I_POP: case I_NOT: case I_SLL: case I_SRL: {
+                    case I_CLEAR: case I_INC: case I_DEC: case I_POP: case I_NOT: {
                         if (tokens->operandOne == NULL) {
                             printf("Invalid first operand for %s instruction on line %d\n",
                                 tokens->tokenText, tokens->lineNum);
@@ -551,57 +551,6 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
 
                             tokens->numPrimitives = 3;
 
-                        } else if (tokens->instructionType == I_SLL){
-                            instrs[0] = 0xC000;
-                            instrs[0] |= (tokens->operandOne->registerNum << 8);
-                            instrs[0] |= (tokens->operandOne->registerNum << 4);
-                            instrs[0] |= (tokens->operandOne->registerNum);
-                            tokens->numPrimitives = 1;
-                        } else if (tokens->instructionType == I_SRL) {
-
-                            /* load number to shift into $t1 */
-                            instrs[0] = 0xCC00;
-                            instrs[0] |= (tokens->operandOne->registerNum << 4);
-                            instrs[0] |= 0x8;
-
-                            /* $rx = 0 */
-                            instrs[1] = 0xC000;
-                            instrs[1] |= (tokens->operandOne->registerNum << 8);
-                            instrs[1] |= 0x88;
-
-                            /* $t2 = 1 */
-                            instrs[2] = 0x2D01;
-                            instrs[3] = 0x3D00;
-
-                            /* $t3 = 2 */
-                            instrs[4] = 0x2E02;
-                            instrs[5] = 0x3E00;
-
-                            /* $t1 -= $t3 */
-                            instrs[6] = 0xECCE;
-
-                            /* if ($t1 < 1) jmp  */
-                            instrs[7] = 0xBECD;
-                            instrs[8] = 0x2F04;
-                            instrs[9] = 0x3F00;
-                            instrs[10] = 0x6EDF;
-
-                            instrs[11] = 0xC000;
-                            instrs[11] |= (tokens->operandOne->registerNum << 8);
-                            instrs[11] |= (tokens->operandOne->registerNum << 4);
-                            instrs[11] |= 0xD;
-
-                            instrs[12] = 0x2F00;
-                            instrs[12] |= ((tokens->address + 4) & 0xFF);
-
-                            instrs[13] = 0x3F00;
-                            instrs[13] |= (((tokens->address + 4) & 0xFF00) >> 8);
-
-                            instrs[14] = 0x10F0;
-
-                            instrs[15] = 0x0;
-
-                            tokens->numPrimitives = 16;
                         } else if (tokens->instructionType == I_INC) {
                             instrs[0] = 0x2C01;
                             instrs[1] = 0x3C00;
@@ -767,7 +716,7 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                     }
 
                     /* register then reg or int literal */
-                    case I_LLO: case I_LHI: case I_LOAD: {
+                    case I_LLO: case I_LHI: case I_LOAD: case I_SLL: case I_SRL: {
                         if (tokens->operandOne == NULL) {
                             printf("Invalid first operand for %s instruction on line %d\n",
                                 tokens->tokenText, tokens->lineNum);
@@ -832,7 +781,7 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                                 instrs[0] |= (tokens->operandTwo->intValue & 0xFF);
                                 tokens->numPrimitives = 1;
                             }
-                        } else {
+                        } else if (tokens->instructionType == I_LLO) {
                             if (tokens->operandTwo->tokenType == REGISTER) {
 
                                 instrs[0] = 0x2DFF;
@@ -855,6 +804,37 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                                 instrs[0] |= (tokens->operandOne->registerNum << 8);
                                 instrs[0] |= (tokens->operandTwo->intValue & 0xFF);
                                 tokens->numPrimitives = 1;
+                            }
+                        } else if (tokens->instructionType == I_SLL) {
+
+                            if (tokens->operandTwo->tokenType == REGISTER) {
+                                instrs[0] = 0xC000;
+                                instrs[0] |= (tokens->operandOne->registerNum << 8);
+                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[0] |= (tokens->operandTwo->registerNum);
+                                tokens->numPrimitives = 1;
+
+                            } else {
+
+                                instrs[0] = 0x2C00;
+                                instrs[0] |= (tokens->operandTwo->intValue & 0xFF);
+
+                                instrs[1] = 0x3C00;
+                                instrs[1] |= (tokens->operandTwo->intValue & 0xFF00) >> 8;
+
+                                instrs[2] = 0xC000;
+                                instrs[2] |= (tokens->operandOne->registerNum << 8);
+                                instrs[2] |= 0xCC;
+                                tokens->numPrimitives = 3;
+                            }
+
+                        } else if (tokens->instructionType == I_SRL) {
+                            /* TODO */
+                            if (tokens->operandTwo->tokenType == REGISTER) {
+
+
+                            } else {
+                                
                             }
                         }
 
@@ -989,251 +969,86 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                         }
                         
                         if (tokens->instructionType == I_MUL) {
+                            /* TODO */
                             if (tokens->operandThree->tokenType == REGISTER) {
 
-                                instrs[0] = 0xCC00;
-                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
-                                instrs[0] |= 0x8;
-
-                                instrs[1] = 0xCD00;
-                                instrs[1] |= (tokens->operandThree->registerNum << 4);
-                                instrs[1] |= 0x8;
-
-                                instrs[2] = 0xC000;
-                                instrs[2] |= (tokens->operandOne->registerNum << 8);
-                                instrs[2] |= 0x88;
-
-                                instrs[3] = 0x2E01;
-                                instrs[4] = 0x3E00;
-
-                                instrs[5] = 0x2F05;
-                                instrs[6] = 0x3F00;
-
-                                instrs[7] = 0x6C8F;
                                 
-                                instrs[8] = 0xECCE;
-
-                                instrs[9] = 0xC000;
-                                instrs[9] |= (tokens->operandOne->registerNum << 8);
-                                instrs[9] |= (tokens->operandOne->registerNum << 4);
-                                instrs[9] |= 0xD;
-
-                                instrs[10] = 0x2F00;
-                                instrs[10] |= ((tokens->address + 3) & 0xFF);
-
-                                instrs[11] = 0x3F00;
-                                instrs[11] |= (((tokens->address + 3) & 0xFF00) >> 8);
-
-                                instrs[12] = 0x10F0;
-                                instrs[13] = 0x0;
-
-                                tokens->numPrimitives = 14;
 
                             } else {
                                 
-                                instrs[0] = 0xCC00;
-                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
-                                instrs[0] |= 0x8;
-
-                                instrs[1] = 0x2D00;
-                                instrs[1] |= (tokens->operandThree->intValue & 0xFF);
-                                instrs[2] = 0x3D00;
-                                instrs[2] |= ((tokens->operandThree->intValue & 0xFF00) >> 8);
-
-                                instrs[3] = 0xC000;
-                                instrs[3] |= (tokens->operandOne->registerNum << 8);
-                                instrs[3] |= 0x88;
-
-                                instrs[4] = 0x2E01;
-                                instrs[5] = 0x3E00;
-
-                                instrs[6] = 0x2F05;
-                                instrs[7] = 0x3F00;
-
-                                instrs[8] = 0x6C8F;
                                 
-                                instrs[9] = 0xECCE;
-
-                                instrs[10] = 0xC000;
-                                instrs[10] |= (tokens->operandOne->registerNum << 8);
-                                instrs[10] |= (tokens->operandOne->registerNum << 4);
-                                instrs[10] |= 0xD;
-
-                                instrs[11] = 0x2F00;
-                                instrs[11] |= ((tokens->address + 3) & 0xFF);
-
-                                instrs[12] = 0x3F00;
-                                instrs[12] |= (((tokens->address + 3) & 0xFF00) >> 8);
-
-                                instrs[13] = 0x10F0;
-                                instrs[14] = 0x0;
-
-                                tokens->numPrimitives = 15;
 
                             }
                         } else if (tokens->instructionType == I_DIV) {
+                            /* TODO */
                             if (tokens->operandThree->tokenType == REGISTER) {
 
-                                /* load first operand into $t1 */
-                                instrs[0] = 0xCC80;
-                                instrs[0] |= (tokens->operandTwo->registerNum);
+                                
 
-                                /* $rx = 0 */
-                                instrs[1] = 0xC000;
-                                instrs[1] |= (tokens->operandOne->registerNum << 8);
-                                instrs[1] |= 0x88;
+                            } else {
 
-                                /* $t3 = operand 2 */
-                                instrs[2] = 0xCE80;
-                                instrs[2] |= tokens->operandThree->registerNum;
-                                instrs[3] = 0x0;
+                                if (tokens->operandThree->intValue == 0) {
+                                    printf("Don't divide by 0. You will halt the processor\n");
+                                    return false;
+                                }
 
-                                 /* $t2 = 1 */
-                                instrs[4] = 0x2D01;
-                                instrs[5] = 0x3D00;
+                                /* clear $rx */
+                                instrs[0] = 0xC000;
+                                instrs[0] |= (tokens->operandOne->registerNum << 8);
+                                instrs[0] |= 0x88;
 
-                                /* $t1 -= $t3 */
-                                instrs[6] = 0xECCE;
+                                /* $t1 = $ry */
+                                instrs[1] = 0xCC00;
+                                instrs[1] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[1] |= 0x8;
 
-                                /* if ($t1 < 1) jmp  */
-                                instrs[7] = 0xBDCD;
+                                /* $t2 = $rz */
+                                instrs[2] = 0x2D00;
+                                instrs[2] |= (tokens->operandThree->intValue & 0xFF);
+                                instrs[3] = 0x3D00;
+                                instrs[3] |= (tokens->operandThree->intValue & 0xFF00) >> 8;
 
-                                instrs[8] = 0x2F06;
-                                instrs[9] = 0x3F00;
-                                instrs[10] = 0x7D8F;
+                                /* $t3 = 1 */
+                                instrs[4] = 0x2E01;
+                                instrs[5] = 0x3E00;
 
-                                instrs[11] = 0x2D01;
-                                instrs[12] = 0x3D00;
+                                /* $t4 = ? */
+                                instrs[6] = 0x2F07;
+                                instrs[7] = 0x3F00;
+
+                                /* $t3 = ($t1 < $t3) */
+                                instrs[8] = 0xBECE;
+
+                                /* if ($t3 == 1) branch */
+                                instrs[9] = 0x7E8F;
+
+
+                                instrs[10] = 0xECCD;
+
+                                instrs[11] = 0x2E01;
+                                instrs[12] = 0x3E00;
 
                                 instrs[13] = 0xC000;
                                 instrs[13] |= (tokens->operandOne->registerNum << 8);
                                 instrs[13] |= (tokens->operandOne->registerNum << 4);
-                                instrs[13] |= 0xD;
+                                instrs[13] |= 0xE;
 
                                 instrs[14] = 0x2F00;
-                                instrs[14] |= ((tokens->address + 4) & 0xFF);
+                                instrs[14] |= (tokens->address + 6) & 0xFF;
 
                                 instrs[15] = 0x3F00;
-                                instrs[15] |= (((tokens->address + 4) & 0xFF00) >> 8);
+                                instrs[15] |= ((tokens->address + 6) & 0xFF00) >> 8;
 
                                 instrs[16] = 0x10F0;
 
                                 instrs[17] = 0x0;
 
-                                tokens->numPrimitives = 16;
-
-                            } else {
-
-                                if (tokens->operandThree->intValue == 0) {
-                                    printf("Don't divide by 0. You will halt the processor\n");
-                                    return false;
-                                }
-
-                                /* load first operand into $t1 */
-                                instrs[0] = 0xCC00;
-                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
-                                instrs[0] |= 0x8;
-
-                                /* $rx = 0 */
-                                instrs[1] = 0xC000;
-                                instrs[1] |= (tokens->operandOne->registerNum << 8);
-                                instrs[1] |= 0x88;
-
-                                /* $t2 = 1 */
-                                instrs[2] = 0x2D01;
-                                instrs[3] = 0x3D00;
-
-                                /* $t3 = immediate val */
-                                instrs[4] = 0x2E00;
-                                instrs[4] |= (tokens->operandThree->intValue & 0xFF);
-                                instrs[5] = 0x3E00;
-                                instrs[5] |= ((tokens->operandThree->intValue & 0xFF00) >> 8);
-
-                                /* $t1 -= $t3 */
-                                instrs[6] = 0xECCE;
-
-                                /* if ($t1 < 1) jmp  */
-                                instrs[7] = 0xBECD;
-                                instrs[8] = 0x2F04;
-                                instrs[9] = 0x3F00;
-                                instrs[10] = 0x6EDF;
-
-                                instrs[11] = 0xC000;
-                                instrs[11] |= (tokens->operandOne->registerNum << 8);
-                                instrs[11] |= (tokens->operandOne->registerNum << 4);
-                                instrs[11] |= 0xD;
-
-                                instrs[12] = 0x2F00;
-                                instrs[12] |= ((tokens->address + 4) & 0xFF);
-
-                                instrs[13] = 0x3F00;
-                                instrs[13] |= (((tokens->address + 4) & 0xFF00) >> 8);
-
-                                instrs[14] = 0x10F0;
-
-                                instrs[15] = 0x0;
-
-                                tokens->numPrimitives = 16;
                             }
                         } else if (tokens->instructionType == I_REM) {
+                            /* TODO */
                             if (tokens->operandThree->tokenType == REGISTER) {
 
-                                /* load first operand into $t1 */
-                                instrs[0] = 0xCC00;
-                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
-                                instrs[0] |= 0x8;
-
-                                /* $rx = 0 */
-                                instrs[1] = 0xC000;
-                                instrs[1] |= (tokens->operandOne->registerNum << 8);
-                                instrs[1] |= 0x88;
-
-                                /* $t3 = operand 2 */
-                                instrs[2] = 0xCE80;
-                                instrs[2] |= tokens->operandThree->registerNum;
-                                instrs[3] = 0x0;
-
-                                 /* $t2 = 1 */
-                                instrs[4] = 0x2D01;
-                                instrs[5] = 0x3D00;
-
-                                /* $t1 -= $t3 */
-                                instrs[6] = 0xECCE;
-
-                                /* if ($t1 < 1) jmp  */
-                                instrs[7] = 0xBDCD;
-
-                                instrs[8] = 0x2F06;
-                                instrs[9] = 0x3F00;
-                                instrs[10] = 0x7D8F;
-
-                                instrs[11] = 0x2D01;
-                                instrs[12] = 0x3D00;
-
-                                instrs[13] = 0xC000;
-                                instrs[13] |= (tokens->operandOne->registerNum << 8);
-                                instrs[13] |= (tokens->operandOne->registerNum << 4);
-                                instrs[13] |= 0xD;
-
-                                instrs[14] = 0x2F00;
-                                instrs[14] |= ((tokens->address + 4) & 0xFF);
-
-                                instrs[15] = 0x3F00;
-                                instrs[15] |= (((tokens->address + 4) & 0xFF00) >> 8);
-
-                                instrs[16] = 0x10F0;
-
-
-                                instrs[17] = 0x2F01;
-                                instrs[18] = 0x3F00;
-                                instrs[19] = 0x6C8F;
-                                instrs[20] = 0xCCCE;
-
-                                instrs[21] = 0xC000;
-                                instrs[21] |= (tokens->operandOne->registerNum << 8);
-                                instrs[21] |= 0xC8;
-
-                                tokens->numPrimitives = 22;
+                                
 
                             } else {
 
@@ -1242,63 +1057,7 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                                     return false;
                                 }
 
-                                /* load first operand into $t1 */
-                                instrs[0] = 0xCC00;
-                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
-                                instrs[0] |= 0x8;
-
-                                /* $rx = 0 */
-                                instrs[1] = 0xC000;
-                                instrs[1] |= (tokens->operandOne->registerNum << 8);
-                                instrs[1] |= 0x88;
-
-                                /* $t2 = 1 */
-                                instrs[2] = 0x2D01;
-                                instrs[3] = 0x3D00;
-
-                                /* $t3 = immediate val */
-                                instrs[4] = 0x2E00;
-                                instrs[4] |= (tokens->operandThree->intValue & 0xFF);
-                                instrs[5] = 0x3E00;
-                                instrs[5] |= ((tokens->operandThree->intValue & 0xFF00) >> 8);
-
-                                /* $t1 -= $t3 */
-                                instrs[6] = 0xECCE;
-
-                                /* if ($t1 < 1) jmp  */
-                                instrs[7] = 0xBECD;
-                                instrs[8] = 0x2F04;
-                                instrs[9] = 0x3F00;
-                                instrs[10] = 0x6EDF;
-
-                                instrs[11] = 0xC000;
-                                instrs[11] |= (tokens->operandOne->registerNum << 8);
-                                instrs[11] |= (tokens->operandOne->registerNum << 4);
-                                instrs[11] |= 0xD;
-
-                                instrs[12] = 0x2F00;
-                                instrs[12] |= ((tokens->address + 4) & 0xFF);
-
-                                instrs[13] = 0x3F00;
-                                instrs[13] |= (((tokens->address + 4) & 0xFF00) >> 8);
-
-                                instrs[14] = 0x10F0;
-
-                                instrs[15] = 0x2E00;
-                                instrs[15] |= (tokens->operandThree->intValue & 0xFF);
-                                instrs[16] = 0x3E00;
-                                instrs[16] |= ((tokens->operandThree->intValue & 0xFF00) >> 8);
-
-                                instrs[17] = 0x2F01;
-                                instrs[18] = 0x3F00;
-                                instrs[19] = 0x6C8F;
-                                instrs[20] = 0xCCCE;
-
-                                instrs[21] = 0xC000;
-                                instrs[21] |= (tokens->operandOne->registerNum << 8);
-                                instrs[21] |= 0xC8;
-
-                                tokens->numPrimitives = 22;
+                                
 
                             }
                         } else {
