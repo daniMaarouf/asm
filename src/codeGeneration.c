@@ -1060,12 +1060,11 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                         if (tokens->instructionType == I_MUL) {
                             if (tokens->operandThree->tokenType == REGISTER) {
 
-                                instrs[0] = 0xCC00;
-                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
-                                instrs[0] |= 0x8;
+                                instrs[0] = 0xCC80;
+                                instrs[0] |= (tokens->operandTwo->registerNum);
 
                                 instrs[1] = 0xCD80;
-                                instrs[1] |= tokens->operandThree->registerNum;
+                                instrs[1] |= (tokens->operandThree->registerNum);
 
                                 instrs[2] = 0x0;
 
@@ -1112,7 +1111,7 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                                 instrs[2] = 0x3D00;
                                 instrs[2] |= ((tokens->operandThree->intValue & 0xFF00) >> 8);
 
-                                                                instrs[0] = 0xC000;
+                                instrs[3] = 0xC000;
                                 instrs[3] = (tokens->operandOne->registerNum << 8);
                                 instrs[3] |= 0x88;
 
