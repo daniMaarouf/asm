@@ -831,15 +831,15 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                         } else if (tokens->instructionType == I_SRL) {
                             if (tokens->operandTwo->tokenType == REGISTER) {
 
-                                /* clear $rx */
-                                instrs[0] = 0xC000;
-                                instrs[0] |= (tokens->operandOne->registerNum << 8);
-                                instrs[0] |= 0x88;
-
                                 /* $t1 = $ry */
-                                instrs[1] = 0xCC00;
-                                instrs[1] |= (tokens->operandTwo->registerNum << 4);
-                                instrs[1] |= 0x8;
+                                instrs[0] = 0xCC00;
+                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[0] |= 0x8;
+
+                                /* clear $rx */
+                                instrs[1] = 0xC000;
+                                instrs[1] |= (tokens->operandOne->registerNum << 8);
+                                instrs[1] |= 0x88;
 
                                 /* $t2 = 2 */
                                 instrs[2] = 0x2D02;
@@ -877,17 +877,17 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
 
 
                             } else {
-                                
-                                /* clear $rx */
-                                instrs[0] = 0xC000;
-                                instrs[0] |= (tokens->operandOne->registerNum << 8);
-                                instrs[0] |= 0x88;
 
                                 /*  */
-                                instrs[1] = 0x2C00;
-                                instrs[1] |= (tokens->operandTwo->intValue & 0xFF);
-                                instrs[2] = 0x3C00;
-                                instrs[2] |= (tokens->operandTwo->intValue & 0xFF00) >> 8;
+                                instrs[0] = 0x2C00;
+                                instrs[0] |= (tokens->operandTwo->intValue & 0xFF);
+                                instrs[1] = 0x3C00;
+                                instrs[1] |= (tokens->operandTwo->intValue & 0xFF00) >> 8;
+                                
+                                /* clear $rx */
+                                instrs[2] = 0xC000;
+                                instrs[2] |= (tokens->operandOne->registerNum << 8);
+                                instrs[2] |= 0x88;
 
                                 /* $t2 = 2 */
                                 instrs[3] = 0x2D02;
@@ -1060,18 +1060,18 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                         if (tokens->instructionType == I_MUL) {
                             if (tokens->operandThree->tokenType == REGISTER) {
 
-                                instrs[0] = 0xC000;
-                                instrs[0] = (tokens->operandOne->registerNum << 8);
-                                instrs[0] |= 0x88;
+                                instrs[0] = 0xCC00;
+                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[0] |= 0x8;
 
-                                instrs[1] = 0xCC00;
-                                instrs[1] |= (tokens->operandTwo->registerNum << 4);
-                                instrs[1] |= 0x8;
+                                instrs[1] = 0xCD80;
+                                instrs[1] |= tokens->operandThree->registerNum;
 
-                                instrs[2] = 0xCD80;
-                                instrs[2] |= tokens->operandThree->registerNum;
+                                instrs[2] = 0x0;
 
-                                instrs[3] = 0x0;
+                                instrs[3] = 0xC000;
+                                instrs[3] = (tokens->operandOne->registerNum << 8);
+                                instrs[3] |= 0x88;
 
                                 instrs[4] = 0x2E01;
                                 instrs[5] = 0x3E00;
@@ -1103,18 +1103,18 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
 
                             } else {
                                
-                                instrs[0] = 0xC000;
-                                instrs[0] = (tokens->operandOne->registerNum << 8);
-                                instrs[0] |= 0x88;
+                                instrs[0] = 0xCC00;
+                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[0] |= 0x8;
 
-                                instrs[1] = 0xCC00;
-                                instrs[1] |= (tokens->operandTwo->registerNum << 4);
-                                instrs[1] |= 0x8;
+                                instrs[1] = 0x2D00;
+                                instrs[1] |= (tokens->operandThree->intValue & 0xFF);
+                                instrs[2] = 0x3D00;
+                                instrs[2] |= ((tokens->operandThree->intValue & 0xFF00) >> 8);
 
-                                instrs[2] = 0x2D00;
-                                instrs[2] |= (tokens->operandThree->intValue & 0xFF);
-                                instrs[3] = 0x3D00;
-                                instrs[3] |= ((tokens->operandThree->intValue & 0xFF00) >> 8);
+                                                                instrs[0] = 0xC000;
+                                instrs[3] = (tokens->operandOne->registerNum << 8);
+                                instrs[3] |= 0x88;
 
                                 instrs[4] = 0x2E01;
                                 instrs[5] = 0x3E00;
@@ -1148,21 +1148,20 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                         } else if (tokens->instructionType == I_DIV) {
                             if (tokens->operandThree->tokenType == REGISTER) {
 
- 
-                                /* clear $rx */
-                                instrs[0] = 0xC000;
-                                instrs[0] |= (tokens->operandOne->registerNum << 8);
-                                instrs[0] |= 0x88;
-
                                 /* $t1 = $ry */
-                                instrs[1] = 0xCC00;
-                                instrs[1] |= (tokens->operandTwo->registerNum << 4);
-                                instrs[1] |= 0x8;
+                                instrs[0] = 0xCC00;
+                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[0] |= 0x8;
 
                                 /* $t2 = $rz */
-                                instrs[2] = 0xCD00;
-                                instrs[2] |= (tokens->operandThree->registerNum) << 4;
-                                instrs[2] |= 0x8;
+                                instrs[1] = 0xCD00;
+                                instrs[1] |= (tokens->operandThree->registerNum) << 4;
+                                instrs[1] |= 0x8;
+
+                                /* clear $rx */
+                                instrs[2] = 0xC000;
+                                instrs[2] |= (tokens->operandOne->registerNum << 8);
+                                instrs[2] |= 0x88;
 
                                 instrs[3] = 0x0;
                                 
@@ -1203,21 +1202,21 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                                     return false;
                                 }
 
-                                /* clear $rx */
-                                instrs[0] = 0xC000;
-                                instrs[0] |= (tokens->operandOne->registerNum << 8);
-                                instrs[0] |= 0x88;
-
                                 /* $t1 = $ry */
-                                instrs[1] = 0xCC00;
-                                instrs[1] |= (tokens->operandTwo->registerNum << 4);
-                                instrs[1] |= 0x8;
+                                instrs[0] = 0xCC00;
+                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[0] |= 0x8;
 
                                 /* $t2 = $rz */
-                                instrs[2] = 0x2D00;
-                                instrs[2] |= (tokens->operandThree->intValue & 0xFF);
-                                instrs[3] = 0x3D00;
-                                instrs[3] |= (tokens->operandThree->intValue & 0xFF00) >> 8;
+                                instrs[1] = 0x2D00;
+                                instrs[1] |= (tokens->operandThree->intValue & 0xFF);
+                                instrs[2] = 0x3D00;
+                                instrs[2] |= (tokens->operandThree->intValue & 0xFF00) >> 8;
+
+                                                                /* clear $rx */
+                                instrs[3] = 0xC000;
+                                instrs[3] |= (tokens->operandOne->registerNum << 8);
+                                instrs[3] |= 0x88;
                                 
                                 /* $t1 -= $t2 */
                                 instrs[4] = 0xECCD;
@@ -1253,22 +1252,23 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                             if (tokens->operandThree->tokenType == REGISTER) {
 
   
-                                /* clear $rx */
-                                instrs[0] = 0xC000;
-                                instrs[0] |= (tokens->operandOne->registerNum << 8);
-                                instrs[0] |= 0x88;
 
                                 /* $t1 = $ry */
-                                instrs[1] = 0xCC00;
-                                instrs[1] |= (tokens->operandTwo->registerNum << 4);
-                                instrs[1] |= 0x8;
+                                instrs[0] = 0xCC00;
+                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[0] |= 0x8;
 
                                 /* $t2 = $rz */
-                                instrs[2] = 0xCD00;
-                                instrs[2] |= (tokens->operandThree->registerNum) << 4;
-                                instrs[2] |= 0x8;
+                                instrs[1] = 0xCD00;
+                                instrs[1] |= (tokens->operandThree->registerNum) << 4;
+                                instrs[1] |= 0x8;
 
-                                instrs[3] = 0x0;
+                                instrs[2] = 0x0;
+
+                                /* clear $rx */
+                                instrs[3] = 0xC000;
+                                instrs[3] |= (tokens->operandOne->registerNum << 8);
+                                instrs[3] |= 0x88;
                                 
                                 /* $t1 -= $t2 */
                                 instrs[4] = 0xECCD;
@@ -1310,21 +1310,23 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                                     return false;
                                 }
 
-                                /* clear $rx */
-                                instrs[0] = 0xC000;
-                                instrs[0] |= (tokens->operandOne->registerNum << 8);
-                                instrs[0] |= 0x88;
+                                
 
                                 /* $t1 = $ry */
-                                instrs[1] = 0xCC00;
-                                instrs[1] |= (tokens->operandTwo->registerNum << 4);
-                                instrs[1] |= 0x8;
+                                instrs[0] = 0xCC00;
+                                instrs[0] |= (tokens->operandTwo->registerNum << 4);
+                                instrs[0] |= 0x8;
 
                                 /* $t2 = $rz */
-                                instrs[2] = 0x2D00;
-                                instrs[2] |= (tokens->operandThree->intValue & 0xFF);
-                                instrs[3] = 0x3D00;
-                                instrs[3] |= (tokens->operandThree->intValue & 0xFF00) >> 8;
+                                instrs[1] = 0x2D00;
+                                instrs[1] |= (tokens->operandThree->intValue & 0xFF);
+                                instrs[2] = 0x3D00;
+                                instrs[2] |= (tokens->operandThree->intValue & 0xFF00) >> 8;
+
+                                /* clear $rx */
+                                instrs[3] = 0xC000;
+                                instrs[3] |= (tokens->operandOne->registerNum << 8);
+                                instrs[3] |= 0x88;
                                 
                                 /* $t1 -= $t2 */
                                 instrs[4] = 0xECCD;
