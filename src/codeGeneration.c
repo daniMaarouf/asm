@@ -7,6 +7,9 @@
 static int regNumber(const char * regString);
 static int decodeNum(const char * numStr, bool * valid);
 
+/*
+    prints ascii binary representation of 16 bit num
+*/
 static void printBinary(uint16_t num, FILE * stream) {
     if (stream == NULL) {
         return;
@@ -38,11 +41,17 @@ static void printWord(FILE * stream, uint16_t word, uint16_t address) {
 /*
     when tokens reach this point they can be a
     linear sequence of tokens which have valid
-    forms. This function will ensure that the
+    'token forms'. 
+    
+    This function will ensure that the
     way the tokens are arranged with respect
-    to each other is valid and will fill in
-    fields for the data structure representing
-    each token
+    to each other is valid.
+    
+    It will also decode things like register numbers,
+    and int literal values, and it will read these
+    values into data structures which represent
+    each token so that the information can be used
+    in later stages of assembling
 */
 bool fillInstructionFields(struct LinkedToken * tokens) {
     if (tokens == NULL) {
@@ -442,7 +451,13 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
 }
 
 /*
-
+    first time this function is called (with writeCode argument
+    equal to 0) no code will be emitted, only the number of primitive
+    instructions that each 'pseudoinstruction / assembler instruction'
+    will take is calculated and stored in data structure.
+    This is necessary to resolve labels to
+    actual addresses. Second time this function is called code
+    will actually be emitted to file
 
 */
 bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bool writeCode, FILE * fp) {
@@ -1996,8 +2011,12 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
 }
 
 /*
+    in future this function should make sure there arent duplicate
+    labels
     does processing including calculating cumulative addresses for label
-    resolution and also converting numbers to twos complement
+    resolution and also converting and int values into twos complement
+    representation if they are negative. the actual address that a label
+    corresponds to is treated similarly to an int literal value
 */
 bool resolveLabels(struct LinkedToken * tokens, uint16_t startAddress) {
     if (tokens == NULL || startAddress >= 0x7000 || startAddress < 0x4000) {
@@ -2082,6 +2101,11 @@ bool resolveLabels(struct LinkedToken * tokens, uint16_t startAddress) {
     return true;
 }
 
+/*
+    higher level function which handles file IO,
+    calls functions to perform final stages of
+    processing and then finally code generation
+*/
 bool generateCode(struct LinkedToken * tokens, const char * fileLoc, uint16_t startAddress) {
     if (tokens == NULL || fileLoc == NULL || startAddress >= 0x7000 || startAddress < 0x4000) {
         return false;
@@ -2127,6 +2151,10 @@ bool generateCode(struct LinkedToken * tokens, const char * fileLoc, uint16_t st
     return true;
 }
 
+/*
+    returns register number based on label
+    returns -1 if not recognized
+*/
 static int regNumber(const char * regString) {
     if (regString == NULL) {
         return -1;
@@ -2153,13 +2181,17 @@ static int regNumber(const char * regString) {
         return 9;
     } else if (strcmp(regString, "$led") == 0) {
         return 10;
-    } else if (strcmp(regString, "$psw") == 0) {
-        return 11;
     } else {
         return -1;
     }
 }
 
+/*
+    decodes a string representation of an int literal
+    can decode decimal, octal, binary or hex
+
+    returns -1 on failure
+*/
 static int decodeNum(const char * numStr, bool * valid) {
     if (numStr == NULL || valid == NULL) {
         return -1;
