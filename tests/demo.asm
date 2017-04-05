@@ -125,9 +125,7 @@ expLoop1:
     beq $r2, $zero, expLoop1
     and $r0, $r0, 0x7F
     and $r1, $r1, 0x7F
-
     load $r2 1
-
 expLoop2:
     beq $r1, $zero, expEnd
     mul $r2, $r2, $r0
@@ -140,6 +138,65 @@ expEnd:
     out $r2
     wait 1000
     ret
+
+primeList:
+    in $r0
+    and $r1, $r0, 0x80
+    bne $r1, $zero, primeList
+    clear $r1
+
+primeListLoop:    
+    beq $r1, $r0, primeListEnd
+    push $r1
+    call isPrime
+    pop $r2
+    inc $r1
+    beq $r2, 0, primeListLoop
+    uadd $r3, $r1, -1
+    push $r3
+    call calculateBCD
+    pop $r3
+    out $r3
+    wait 200
+    jmp primeListLoop
+primtListEnd:
+    wait 1000
+    ret
+
+primeFactors:
+    call primeList
+    wait 5000
+    ret
+
+isPrime:
+    pop $r7
+    pop $r4
+    bgt $r4, 1, cont1
+    push 0
+    push $r7
+    ret
+cont1:
+    bgt $r4, 3, cont2
+    push 1
+    push $r7
+    ret
+cont2:
+    load $r5 2
+primeLoop:
+    usub $r6, $r4, 1
+    bgt $r5, $r6, primeEnd
+    rem $r6, $r4, $r5
+    inc $r5
+    bne $r6, 0, primeLoop
+    push 0
+    push $r7
+    ret
+primeEnd:
+    push 1
+    push $r7
+    ret
+
+
 
 calculateBCD:
     pop $r7
