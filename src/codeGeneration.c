@@ -896,19 +896,17 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                             if (tokens->operandTwo->tokenType == REGISTER) {
                                 tokens->numPrimitives = 7;
 
-                                instrs[0] = 0x2D00;
-                                instrs[1] = 0x3DFF;
+                                instrs[0] = 0x2C00;
+                                instrs[1] = 0x3CFF;
 
-                                instrs[2] = 0x8E00;
-                                instrs[2] |= (tokens->operandTwo->registerNum << 4);
-                                instrs[2] |= 0xD;
+                                instrs[2] = 0x8EC0;
+                                instrs[2] |= tokens->operandTwo->registerNum;
 
-                                instrs[3] = 0x2DFF;
-                                instrs[4] = 0x3D00;
+                                instrs[3] = 0x2CFF;
+                                instrs[4] = 0x3C00;
 
-                                instrs[5] = 0x8F00;
-                                instrs[5] |= (tokens->operandOne->registerNum << 4);
-                                instrs[5] |= 0xD;
+                                instrs[5] = 0x8FC0;
+                                instrs[5] |= (tokens->operandOne->registerNum);
 
                                 instrs[6] = 0x9000;
                                 instrs[6] |= (tokens->operandOne->registerNum << 8);
@@ -923,19 +921,17 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                         } else if (tokens->instructionType == I_LLO) {
                             if (tokens->operandTwo->tokenType == REGISTER) {
 
-                                instrs[0] = 0x2DFF;
-                                instrs[1] = 0x3D00;
+                                instrs[0] = 0x2CFF;
+                                instrs[1] = 0x3C00;
 
-                                instrs[2] = 0x8E00;
-                                instrs[2] |= (tokens->operandTwo->registerNum << 4);
-                                instrs[2] |= 0xD;
+                                instrs[2] = 0x8EC0;
+                                instrs[2] |= (tokens->operandTwo->registerNum);
 
-                                instrs[3] = 0x2D00;
-                                instrs[4] = 0x3DFF;
+                                instrs[3] = 0x2C00;
+                                instrs[4] = 0x3CFF;
 
-                                instrs[5] = 0x8F00;
-                                instrs[5] |= (tokens->operandOne->registerNum << 4);
-                                instrs[5] |= 0xD;
+                                instrs[5] = 0x8FC0;
+                                instrs[5] |= (tokens->operandOne->registerNum);
 
                                 instrs[6] = 0x9000;
                                 instrs[6] |= (tokens->operandOne->registerNum << 8);
