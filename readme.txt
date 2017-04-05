@@ -34,4 +34,18 @@ length of programs: have div, srl, mul,
 rem, wait instructions as actual subroutines
 with predetermined location in
 memory that get called when any of these
-instructions are executed. 
+instructions are executed.
+
+11. Note: this assembler loads all tokens into
+memory to process them. Maybe this is not optimal/
+maybe it could use less memory. Despite this the
+assembler seems to work fine.
+
+12. LW and SW offsets still need to be tested
+
+13. Not predefined calling convention, in test
+programs I have written I am dealing with return
+values and the return address by shuffling around
+values on the stack. Maybe this should be done
+with registers? What I have works but isn't
+very practical
