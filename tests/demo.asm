@@ -56,7 +56,7 @@ basicFibLoop:
     jmp basicFibLoop
 basicFibEnd:
     push $r2
-    calculateBCD
+    call calculateBCD
     pop $r2
     out $r2
     wait 1000
@@ -159,7 +159,7 @@ primeListLoop:
     out $r3
     wait 200
     jmp primeListLoop
-primtListEnd:
+primeListEnd:
     wait 1000
     ret
 

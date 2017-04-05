@@ -435,13 +435,13 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
             case BIN_LITERAL:
             case OCTAL_LITERAL:
             case OFFSET:
-            printf("Lone operand '%s'\n", tokens->tokenText);
+            printf("Lone operand '%s' on line %d\n", tokens->tokenText, tokens->lineNum);
             return false;
             
             case STRING_LITERAL:
             case NONE:
             default:
-            printf("Illegal token '%s'\n", tokens->tokenText);
+            printf("Illegal token '%s' one line %d\n", tokens->tokenText, tokens->lineNum);
             return false;
 
         }
