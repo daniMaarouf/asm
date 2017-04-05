@@ -8,6 +8,9 @@ mainLoop:
     inc $r1
     beq $r2, 0, mainLoop
     uadd $r3, $r1, -1
+    push $r3
+    call calculateBCD
+    pop $r3
     out $r3
     jmp mainLoop
 mainEnd:
@@ -40,3 +43,46 @@ primeEnd:
     push 1
     push $r7
     ret
+
+calculateBCD:
+    pop $r7
+    pop $r4
+    push $r7
+    
+    clear $r6
+    
+    rem $r5, $r4, 10
+    or $r6, $r6, $r5
+    
+    div $r5, $r4, 10
+    rem $r5, $r5, 10
+    clear $r7
+loop1:
+    sll $r5, $r5
+    inc $r7
+    bne $r7, 4, loop1
+    or $r6, $r6, $r5
+    
+    div $r5, $r4, 100
+    rem $r5, $r5, 10
+    clear $r7
+loop2:
+    sll $r5, $r5
+    inc $r7
+    bne $r7, 8, loop2
+    or $r6, $r6, $r5
+
+    div $r5, $r4, 1000
+    rem $r5, $r5, 10
+    clear $r7
+loop3:
+    sll $r5, $r5
+    inc $r7
+    bne $r7, 12, loop3
+    or $r6, $r6, $r5
+
+    pop $r7
+    push $r6
+    push $r7
+    ret
+
