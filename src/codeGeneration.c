@@ -155,7 +155,7 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                     }
 
                     /* one register */
-                    case I_CLEAR: case I_INC: case I_DEC: case I_POP: 
+                    case I_CLEAR: case I_INC: case I_DEC: case I_POP: case I_IN: 
                     case I_NOT:
                     /* one register or int literal */
                     case I_PUSH: case I_OUT: case I_WAIT:
@@ -527,7 +527,7 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                     }
 
                     /* must have exactly one register operand */
-                    case I_CLEAR: case I_INC: case I_DEC: case I_POP: case I_NOT: {
+                    case I_CLEAR: case I_INC: case I_DEC: case I_POP: case I_NOT: case I_IN: {
                         if (tokens->operandOne == NULL) {
                             printf("Invalid first operand for %s instruction on line %d\n",
                                 tokens->tokenText, tokens->lineNum);
@@ -583,6 +583,11 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                             instrs[2] |= (tokens->operandOne->registerNum << 4);
                             instrs[2] |= 0xC;
                             tokens->numPrimitives = 3;
+                        } else if (tokens->instructionType == I_IN) {
+                            instrs[0] = 0xC000;
+                            instrs[0] |= (tokens->operandOne->registerNum) << 8;
+                            instrs[0] |= 0x89;
+                            tokens->numPrimitives = 1;
                         }
 
                         break;

@@ -12,6 +12,7 @@ mainLoop:
     call calculateBCD
     pop $r3
     out $r3
+    wait 200
     jmp mainLoop
 mainEnd:
     beq $zero, $zero, mainEnd
