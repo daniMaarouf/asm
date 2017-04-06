@@ -470,6 +470,7 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
 
     if (writeCode) {
         /* load stack pointer register B with 0x7FEF */
+        fprintf(fp, "--ENGG3380 Assembler - v0.01, by Dani Maarouf\n");
         printWord(fp, 0x2BEF, startAddress);
         printWord(fp, 0x3B7F, startAddress + 1);
     }

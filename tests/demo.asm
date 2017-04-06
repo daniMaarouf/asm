@@ -1,8 +1,8 @@
 input:    
-    out 0x1111          #this means program expected you to chose demo
+    out 0x1111              #this means program expects you to chose demo
     in $r0
     and $r1, $r0, 0x0080
-    beq $r1, $zero, input #wait until user flips 8th switch
+    beq $r1, $zero, input   #wait until user flips 8th switch
     out 0x0000
 
     and $r1, $r0, 0x007F
@@ -15,27 +15,45 @@ notBasicFib:
     call recursiveFib
     jmp end
 notRecursiveFib:
-    bne $r2, 0x2, notExponentiation
+    bne $r1, 0x2, notExponentiation
     call exponentiation
     jmp end
 notExponentiation:
-    bne $r2, 0x3, notPrimeList
+    bne $r1, 0x3, notPrimeList
     call primeList
     jmp end
 notPrimeList:
-    bne $r2, 0x4, notPrimeFactors
+    bne $r1, 0x4, notPrimeFactors
     call primeFactors
     jmp end
 notPrimeFactors:
-    out 0xFFFF      #this status code means that no demo was chosen
-    wait 1000
+    bne $r1, 0x5, notExtra1
+    call extra1
+    jmp end
+notExtra1:
+    bne $r1, 0x6, notExtra2
+    call extra2
+    jmp end
+notExtra2:
+    out 0xFFFF          #this status code means that no demo was chosen
+    wait 2000
 end:
     in $r0
     and $r1, $r0, 0x0080
-    out 0x2222      #this means pull down upper switch
+    out 0xEEEE          #this means pull down upper switch
     bne $r1, $zero, end
-    out 0x0000      #default
+    out 0x0000          #default
     jmp input
+
+extra1:
+    out 0xAAAA
+    wait 200
+    ret
+
+extra2:
+    out 0xBBBB
+    wait 200
+    ret
 
 basicFib:
     load $r0, 1
@@ -46,13 +64,14 @@ basicFibInput:
     and $r4, $r3, 0x80
     bne $r4, $zero, basicFibInput
     and $r3, $r3, 0x7F
-    clear $r2
-    clear $r4
+    load $r2 1
+    load $r4 1
 basicFibLoop:
-    beq $r4, $r3, basicFibEnd
+    bge $r4, $r3, basicFibEnd
     uadd $r2, $r0, $r1
     load $r0, $r1
     load $r1, $r2
+    inc $r4
     jmp basicFibLoop
 basicFibEnd:
     push $r2
@@ -69,13 +88,12 @@ recursiveFib:
     bne $r1, $zero, recursiveFib
     and $r0, $r0, 0x7F
     load $r1 0
+    load $r2 1
 recursiveFibLoop:
-    bge $r1, $r0, recursiveFibEnd
+    bgt $r1, $r0, recursiveFibEnd
+    
     push $r1
     call calcFib
-    pop $r2
-    
-    push $r2
     call calculateBCD
     pop $r2
 
@@ -85,7 +103,7 @@ recursiveFibLoop:
     jmp recursiveFibLoop
 recursiveFibEnd:
     out $r2
-    wait 1000
+    wait 3000
     ret
 
 calcFib:
@@ -116,10 +134,12 @@ recurse:
     ret
 
 exponentiation:
+    out 0x5555
     in $r0
     and $r1, $r0, 0x80
     bne $r1, $zero, exponentiation
 expLoop1:
+    out 0x6666
     in $r1
     and $r2, $r1, 0x80
     beq $r2, $zero, expLoop1
@@ -140,6 +160,7 @@ expEnd:
     ret
 
 primeList:
+    out 0x7777
     in $r0
     and $r1, $r0, 0x80
     bne $r1, $zero, primeList
@@ -164,10 +185,97 @@ primeListEnd:
     ret
 
 primeFactors:
-    call primeList
-    wait 5000
+    out 0x8888
+    in $r0
+    and $r1, $r0, 0x80
+    bne $r1, $zero, primeFactors
+factorsGetHiBits:
+    out 0x9999
+    in $r1
+    and $r2, $r1, 0x80
+    beq $r2, $zero, factorsGetHiBits
+    
+    and $r1, $r1, 0x7F
+
+    clear $r2
+
+factorsShiftHiBits:
+    sll $r1, $r1
+    inc $r2
+    bne $r2, 7, factorsShiftHiBits
+
+    or $r0, $r0, $r1
+
+    bgt $r0, 1, factorsCheckPrime
+    out 0xFFFF
+    wait 1000
     ret
 
+factorsCheckPrime:
+    push $r0
+    call isPrime
+    pop $r1
+    beq $r1, $zero, factorsNotPrime
+    out 0xFFFF
+    wait 200
+    push $r0
+    call calculateBCD
+    pop $r0
+    out $r0
+    wait 500
+    ret
+factorsNotPrime:
+    clear $r1
+    clear $r3
+primeFactorsLoop:    
+    beq $r1, $r0, primeFactorsComplete
+    push $r1
+    call isPrime
+    pop $r2
+    inc $r1
+    beq $r2, 0, primeFactorsLoop
+    uadd $r2, $r1, -1
+    sw $r2, 0($r3)
+    inc $r3
+    jmp primeFactorsLoop
+primeFactorsComplete:
+
+    clear $r1
+    clear $r2
+    clear $r4
+    clear $r5
+    load $r6 0x400
+
+primeFactorsCalc:
+    beq $r1, $r3, primeFactorsPrint
+    lw $r2, 0($r1)
+    rem $r5, $r0, $r2
+    inc $r1
+    bne $r5, 0, primeFactorsCalc
+    sw $r2, $r6
+    inc $r6
+    div $r0, $r0, $r2
+    clear $r1
+    jmp primeFactorsCalc
+primeFactorsPrint:
+    load $r1, $r6
+    load $r0, 0x400
+factorsPrintLoop:
+    beq $r0, $r1, factorsRet
+    lw $r2, $r0
+    inc $r0
+    push $r2
+    call calculateBCD
+    pop $r2
+    out $r2
+    wait 500
+    out 0
+    wait 200
+    jmp factorsPrintLoop
+factorsRet:
+    wait 1000
+    ret
+    
 isPrime:
     pop $r7
     pop $r4
@@ -195,8 +303,6 @@ primeEnd:
     push 1
     push $r7
     ret
-
-
 
 calculateBCD:
     pop $r7
