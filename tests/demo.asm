@@ -1,3 +1,7 @@
+#ENGG3380 Term Project
+#Code for demo
+#Written by Dani Maarouf
+
 input:    
     out 0x1111              #program wants you to choose demo
     in $r0
@@ -60,7 +64,7 @@ basicFib:
     load $r0, 1         #f(0) = 1
     load $r1, 1         #f(1) = 1
 basicFibInput:
-    out 0x3333          #get user input
+    out 0x2222          #get user input
     in $r3
     and $r4, $r3, 0x80
     bne $r4, $zero, basicFibInput
@@ -83,7 +87,7 @@ basicFibEnd:
     ret
 
 recursiveFib:
-    out 0x4444                  #get user input
+    out 0x3333                  #get user input
     in $r0
     and $r1, $r0, 0x80
     bne $r1, $zero, recursiveFib
@@ -135,12 +139,12 @@ recurse:
     ret
 
 exponentiation:
-    out 0x5555                      #get first number
+    out 0x4444                      #get first number
     in $r0
     and $r1, $r0, 0x80
     bne $r1, $zero, exponentiation
 expLoop1:
-    out 0x6666                      #get second number
+    out 0x5555                      #get second number
     in $r1
     and $r2, $r1, 0x80
     beq $r2, $zero, expLoop1
@@ -161,7 +165,7 @@ expEnd:
     ret
 
 primeList:
-    out 0x7777                      #user input
+    out 0x6666                      #user input
     in $r0
     and $r1, $r0, 0x80
     bne $r1, $zero, primeList
@@ -186,12 +190,12 @@ primeListEnd:
     ret
 
 primeFactors:
-    out 0x8888                      #get lower 7 bits
+    out 0x7777                      #get lower 7 bits
     in $r0
     and $r1, $r0, 0x80
     bne $r1, $zero, primeFactors
 factorsGetHiBits:
-    out 0x9999                      #get upper 7 bits
+    out 0x8888                      #get upper 7 bits
     in $r1
     and $r2, $r1, 0x80
     beq $r2, $zero, factorsGetHiBits
@@ -217,8 +221,8 @@ factorsCheckPrime:
     call isPrime
     pop $r1
     beq $r1, $zero, factorsNotPrime
-    out 0xFFFF                      #if prime print status message, print out the prime and return
-    wait 200
+    out 0xDDDD                      #if prime print status message, print out the prime and return
+    wait 500
     push $r0
     call calculateBCD
     pop $r0
@@ -269,12 +273,12 @@ factorsPrintLoop:
     call calculateBCD
     pop $r2
     out $r2
-    wait 500
+    wait 750
     out 0
-    wait 200
+    wait 300
     jmp factorsPrintLoop
 factorsRet:
-    wait 1000
+    wait 200
     ret
     
 isPrime:

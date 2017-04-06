@@ -70,11 +70,14 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                     && tokens->next->next == NULL)) {
                     /* comment then end of file */
                     return true;
-                } else if (tokens->next->tokenType == LABEL
-                    || tokens->next->tokenType == INSTRUCTION) {
-                    tokens = tokens->next;
-                    break;
-                } else {
+                } else if (tokens->next->tokenType == REGISTER
+                        || tokens->next->tokenType == OFFSET
+                        || tokens->next->tokenType == DECIMAL_LITERAL
+                        || tokens->next->tokenType == HEX_LITERAL
+                        || tokens->next->tokenType == BIN_LITERAL
+                        || tokens->next->tokenType == OCTAL_LITERAL
+                        || tokens->next->tokenType == IDENTIFIER) {
+                    
                     if (tokens->next->tokenText != NULL) {
                         printf("This type of token: %s\nshould not appear after a comment\n", 
                             tokens->next->tokenText);
@@ -83,6 +86,9 @@ bool fillInstructionFields(struct LinkedToken * tokens) {
                         printf("Invalid token after comment: %s on line %d\n", tokens->tokenText, tokens->lineNum);
                     }
                     return false;
+                } else {
+                    tokens = tokens->next;
+                    break;
                 }
                 break;
             }
