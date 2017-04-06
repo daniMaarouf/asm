@@ -658,7 +658,7 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                                 instrs[0] = 0xCC88;
                                 instrs[1] = 0xCD88;
 
-                                /* maigc number 2702 for inner loop */
+                                /* magic number 2702 for inner loop (happens to take about 1ms to execute) */
                                 instrs[2] = 0x2EA3;
                                 instrs[3] = 0x3E02;
 
@@ -713,7 +713,7 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
                                 instrs[0] = 0xCC88;
                                 instrs[1] = 0xCD88;
 
-                                /* maigc number 2702 for inner loop */
+                                /* magic number 2702 for inner loop (happens to take about 1ms to execute) */
                                 instrs[2] = 0x2EA3;
                                 instrs[3] = 0x3E02;
 
@@ -2113,12 +2113,14 @@ bool generateCode(struct LinkedToken * tokens, const char * fileLoc, uint16_t st
         return false;
     }
 
-    /* first stage evaluation where just lengths of instructions are obtained */
+    /* PHASE 4.1: first stage evaluation where just lengths of instructions are obtained */
     if (!evaluateInstructions(tokens, startAddress, false, NULL)) {
         printf("Problem evaluating code. Some of your instructions may be malformed\n");
         return false;
     }
 
+    /* PHASE 4.2: convert int values to twos complement, calculate cumulative
+    addresses for each instruction and resolve label references */
     if (!resolveLabels(tokens, startAddress)) {
         printf("Problem resolving addresses or labels\n");
         return false;
@@ -2141,6 +2143,7 @@ bool generateCode(struct LinkedToken * tokens, const char * fileLoc, uint16_t st
         return false;
     }
 
+    /* PHASE 4.3: emit code */
     if (!evaluateInstructions(tokens, startAddress, true, textFile)) {
         printf("Could not write code to file\n");
         fclose(textFile);

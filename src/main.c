@@ -30,31 +30,42 @@ int main(int argc, char ** argv) {
         return 1;
     }
 
-    /* tokenizes based on whitespace and commas, ignores whitespace
-    and commas for comments. Returns linked list of tokens */
+    /* PHASE 1: tokenizes based on whitespace and commas, ignores whitespace
+    and commas for comments. Returns a linked list of tokens which require
+    further processing */
     struct LinkedToken * tokens = tokenize(arg);
     if (tokens == NULL) {
         printf("%s could not be processed\n", arg);
         return 1;
     }
 
-    /* does first stage identification of the tokens and ensures 
-    that they match a predefined set of allowable patterns */
+    /* PHASE 2: does basic identification of tokens and checks that
+    all the tokens have valid forms */
     if (!identifyTokens(tokens)) {
         printf("Tokens could not be identified\n");
         destroyTokens(tokens);
         return 1;
     }
 
-    /* parses tokens to make sure they are ordered/organized
-    correctly and fills fields in data structures representing
-    the instructions with decoded data from token text  */
+    /* PHASE 3: analyzes the sequence of tokens to determine
+    whether they are ordered in a valid way. For example for an
+    instruction which expects 3 operands the next 3 tokens in
+    the sequence must be tokens which can be used as operands.
+    Labels must precede other labels or instructions, etc.
+
+    Simultaneously data in the tokens is being decoded (hence
+    the name of the function: fillInstructionFields), the 
+    nybble for register tokens is decoded and integer literal
+    values are decoded and read into the appropriate LinkedToken struct */
     if (!fillInstructionFields(tokens)) {
         printf("Invalid organization of tokens\n");
         destroyTokens(tokens);
         return 1;
     }
 
+    /* PHASE 4: See comments in generateCode() for more detailed breakdown
+    First gets addresses in memory for each instruction, then resolves
+    references to labels, then finally generates code and prints it to file */
     if (!generateCode(tokens, arg, 0x4000)) {
         printf("Could not generate binary\n");
         destroyTokens(tokens);

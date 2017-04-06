@@ -6,6 +6,10 @@
 
 #define BUFFER_LEN 256
 
+/*
+    creates memory for token node and initializes
+    fields with default values
+*/
 struct LinkedToken * createToken() {
     struct LinkedToken * temp = malloc(sizeof(struct LinkedToken));
     if (temp == NULL) {
@@ -28,6 +32,9 @@ struct LinkedToken * createToken() {
     return temp;
 }
 
+/*
+    frees memory for a list of tokens
+*/
 void destroyTokens(struct LinkedToken * list) {
     while (list != NULL) {
         free(list->tokenText);
@@ -37,17 +44,9 @@ void destroyTokens(struct LinkedToken * list) {
     }
 }
 
-void printTokens(struct LinkedToken * tokens) {
-    while (tokens != NULL) {
-        if (tokens->tokenText != NULL) {
-            printf("%s\n", tokens->tokenText);
-        } else {
-            break;
-        }
-        tokens = tokens->next;
-    }
-}
-
+/*
+    tokenize based on whitespace and commas
+*/
 struct LinkedToken * tokenize(const char * filename) {
     if (filename == NULL) {
         return NULL;

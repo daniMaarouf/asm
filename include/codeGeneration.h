@@ -6,7 +6,6 @@
 #include "tokenData.h"
 
 bool fillInstructionFields(struct LinkedToken * tokens);
-
 bool generateCode(struct LinkedToken * tokens, const char * fileLoc, uint16_t startAddress);
 
 #endif

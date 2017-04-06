@@ -145,6 +145,9 @@ int instructionType(struct LinkedToken * token) {
     return -1;
 }
 
+/*
+    identify tokens and ensure that they have a valid form
+*/
 bool identifyTokens(struct LinkedToken * list) {
     if (list == NULL) {
         return false;
@@ -179,7 +182,6 @@ bool identifyTokens(struct LinkedToken * list) {
             printf("String literals not supported: %s on line %d\n", list->tokenText, list->lineNum);
             return false;
         } else if (allChars(list, isAlphanumeric, 0)) {
-
             int type = instructionType(list);
             if (type == -1) {
                 list->tokenType = IDENTIFIER;
@@ -187,9 +189,6 @@ bool identifyTokens(struct LinkedToken * list) {
                 list->tokenType = INSTRUCTION;
                 list->instructionType = (enum InstructionType) type;
             }
-
-            
-
         } else if (isOffset(list)) {
             list->tokenType = OFFSET;
         } else {
