@@ -1,4 +1,4 @@
-#ENGG3380 Term Project
+#ENGG3380 Term Project - Phase 3
 #Code for demo
 #Written by Dani Maarouf
 
@@ -8,8 +8,6 @@ input:
     and $r1, $r0, 0x0080
     beq $r1, $zero, input   #wait until user flips 8th switch
     
-    out 0x0000              #for debugging
-
     and $r1, $r0, 0x007F    #8th bit not relevant
     
     bne $r1, 0x0, notBasicFib   #switch statement for desired function
@@ -47,19 +45,22 @@ end:
     and $r1, $r0, 0x0080
     out 0xEEEE          #make user pull down 8th switch before looping back
     bne $r1, $zero, end
-    out 0x0000
     jmp input
 
+#template subroutine which can be filled in on demo day
 extra1:
-    out 0xAAAA          #template which can be filled in on demo day
+    out 0xAAAA          
     wait 200
     ret
 
+#template subroutine which can be filled in on demo day
 extra2:
-    out 0xBBBB          #template which can be filled in on demo day
+    out 0xBBBB          
     wait 200
     ret
 
+#subroutine which simply prints out fib number that
+#user choses with switches
 basicFib:
     load $r0, 1         #f(0) = 1
     load $r1, 1         #f(1) = 1
@@ -86,6 +87,8 @@ basicFibEnd:
     wait 1000                   #stall for 1000ms
     ret
 
+#subroutine which prints out the fibonacci numbers up to
+#and including the number specified by user
 recursiveFib:
     out 0x3333                  #get user input
     in $r0
@@ -111,6 +114,8 @@ recursiveFibEnd:
     wait 3000               #wait 3s
     ret
 
+#subroutine which is recursive, calculates fib(n)
+#for the n which is passed as argument through the stack
 calcFib:
     pop $r7     #return address now in r7
     pop $r4     #argument now in $r4
@@ -138,6 +143,8 @@ recurse:
     push $r7
     ret
 
+#subroutine, calculates the result when base that user
+#provides is exponentiated with exponent that user provides
 exponentiation:
     out 0x4444                      #get first number
     in $r0
@@ -164,6 +171,8 @@ expEnd:
     wait 1000
     ret
 
+#subroutine, prints prime numbers up to but not including
+#the value that the user gives with switches
 primeList:
     out 0x6666                      #user input
     in $r0
@@ -189,6 +198,8 @@ primeListEnd:
     wait 1000
     ret
 
+#subroutine, prints prime factorization for an integer
+#which user provides through switch input
 primeFactors:
     out 0x7777                      #get lower 7 bits
     in $r0
@@ -244,13 +255,11 @@ primeFactorsLoop:
     inc $r3                                 #r3 stores highest prime
     jmp primeFactorsLoop
 primeFactorsComplete:
-
     clear $r1                               #new loop index for divide loop
     clear $r2
     clear $r4
     clear $r5
     load $r6 0x400                          #store prime factors starting at 0x400 (arbitrary address)
-
 primeFactorsCalc:
     beq $r1, $r3, primeFactorsPrint         #once new loop index reaches final prime calculated: exit
     lw $r2, 0($r1)                          #load the appropriate prime
@@ -280,7 +289,9 @@ factorsPrintLoop:
 factorsRet:
     wait 200
     ret
-    
+   
+#subroutine, returns boolean value on stack which
+#indicates whether or not argument is prime number
 isPrime:
     pop $r7
     pop $r4
@@ -309,13 +320,14 @@ primeEnd:
     push $r7
     ret
 
+#subroutine, returns BCD representation
+#of argument on stack
 calculateBCD:
     pop $r7
     pop $r4
     push $r7
-    
     clear $r6
-    
+
     rem $r5, $r4, 10        #extract first decimal digit
     or $r6, $r6, $r5
     
