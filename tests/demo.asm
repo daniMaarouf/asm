@@ -62,16 +62,15 @@ extra2:
 #subroutine which simply prints out fib number that
 #user choses with switches
 basicFib:
-    load $r0, 1         #f(0) = f(1) = 1
-    sw $r0, 0           #store f(0) in memory location 0
-    sw $r0, 1           #store f(1) in memory location 1
-basicFibInput:
     out 0x2222          #get user input
     in $r3
     and $r4, $r3, 0x80
-    bne $r4, $zero, basicFibInput
+    bne $r4, $zero, basicFib
+    
     and $r3, $r3, 0x7F      #8th bit of user input not relevant
-    load $r2 1              #for if input is less than 2
+    load $r0, 1             #f(0) = f(1) = 1
+    sw $r0, 0               #store f(0) in memory location 0
+    sw $r0, 1               #store f(1) in memory location 1
     load $r4 2              #loop index
 basicFibLoop:
     bgt $r4, $r3, basicFibEnd   #desired fib has been calculated and is in $r2
@@ -79,15 +78,14 @@ basicFibLoop:
     lw $r1, -1($r4)
     uadd $r2, $r0, $r1
     sw $r2, 0($r4)
-    inc $r4
     inc $r4                     #increment loop index
     jmp basicFibLoop
 basicFibEnd:
-    lw $r2, 0($r3)
-    push $r2                    #call with argument
+    lw $r0, 0($r3)              #get the fib value
+    push $r0                    #call with argument
     call calculateBCD
-    pop $r2                     #get return value
-    out $r2
+    pop $r0                     #get return value
+    out $r0
     wait 1000                   #stall for 1000ms
     ret
 
