@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "codeGeneration.h"
 
@@ -476,7 +477,14 @@ bool evaluateInstructions(struct LinkedToken * tokens, uint16_t startAddress, bo
 
     if (writeCode) {
         /* load stack pointer register B with 0x7FEF */
+        time_t t = time(NULL);
+        struct tm * tm = localtime(&t);
+        char * timeString = malloc(sizeof(char) * 61);
+        strftime(timeString, sizeof(char) * 60, "%c", tm);
         fprintf(fp, "--ENGG3380 Assembler - v0.01, by Dani Maarouf\n");
+        fprintf(fp, "--Time assembled: %s\n", timeString);
+        free(timeString);
+
         printWord(fp, 0x2BEF, startAddress);
         printWord(fp, 0x3B7F, startAddress + 1);
     }

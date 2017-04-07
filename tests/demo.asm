@@ -30,14 +30,10 @@ notPrimeList:
     call primeFactors
     jmp end
 notPrimeFactors:
-    bne $r1, 0x5, notExtra1
-    call extra1
+    bne $r1, 0x5, notClassDemo
+    call classDemo
     jmp end
-notExtra1:
-    bne $r1, 0x6, notExtra2
-    call extra2
-    jmp end
-notExtra2:
+notClassDemo:
     out 0xFFFF          #no program chosen, user input couldn't be matched
     wait 2000
 end:
@@ -48,9 +44,34 @@ end:
     jmp input
 
 #template subroutine which can be filled in on demo day
-extra1:
-    out 0xAAAA          
-    wait 200
+classDemo:
+    out 0x9999          #get user input
+    in $r3
+    and $r4, $r3, 0x80
+    bne $r4, $zero, classDemo
+    
+    and $r3, $r3, 0x7F      #8th bit of user input not relevant
+    load $r0, 1             #f(0) = f(1) = 1
+    sw $r0, 0               #store f(0) = 1in memory location 0
+    load $r0, 2
+    sw $r0, 1               #store f(1) = 2in memory location 1
+    load $r4 2              #loop index
+classDemoLoop:
+    bgt $r4, $r3, classDemoEnd   #desired fib has been calculated and is in $r2
+    lw $r0, -2($r4)
+    sll $r0, $r0
+    lw $r1, -1($r4)
+    uadd $r2, $r0, $r1
+    sw $r2, 0($r4)
+    inc $r4                     #increment loop index
+    jmp classDemoLoop
+classDemoEnd:
+    lw $r0, 0($r3)              #get the fib value
+    push $r0                    #call with argument
+    call calculateBCD
+    pop $r0                     #get return value
+    out $r0
+    wait 1000                   #stall for 1000ms
     ret
 
 #template subroutine which can be filled in on demo day
