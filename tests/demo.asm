@@ -69,7 +69,7 @@ classDemoEnd:
     lw $r0, 0($r3)              #get the fib value
     push $r0                    #call with argument
     call calculateBCD
-    pop $r0                     #get return value
+    pop $r0                     #get return value from memory
     out $r0
     wait 1000                   #stall for 1000ms
     ret
