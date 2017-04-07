@@ -70,7 +70,7 @@ struct LinkedToken * tokenize(const char * filename) {
     }
 
     bool insideComment = false;
-    int lineNum = 0;
+    int lineNum = 1;
 
     while ((c = fgetc(fp)) != EOF) {
         /* force lowercase */
