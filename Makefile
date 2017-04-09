@@ -1,7 +1,7 @@
 CC = gcc
 SRC_FILES = src/main.c src/tokenData.c src/tokenIdentify.c src/codeGeneration.c
 HEADER_FILES = include/tokenData.h include/tokenIdentify.h include/codeGeneration.h
-CFLAGS = -Wall -Wextra -Wpedantic -std=c99 -Iinclude
+CFLAGS = -Wall -Wextra -std=c89 -Iinclude
 
 all: assembler
 
